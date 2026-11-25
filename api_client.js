@@ -31,7 +31,7 @@
     return a;
   }
 
-  function select4StratifiedScenarios(allScenarios) {
+  function select4StratifiedScenarios(allScenarios, policyOverride) {
     const byKey = {};
     const cats = [];
     allScenarios.forEach((sc) => {
@@ -39,15 +39,30 @@
       byKey[`${sc.category_key}|${sc.involvement}`] = sc;
     });
     const shuffledCats = shuffle(cats);
-    const lowDisc = shuffle([0, 1]);
-    const highDisc = shuffle([0, 1]);
-
-    return shuffle([
-      { sc: byKey[`${shuffledCats[0]}|low`], hasDiscount: lowDisc[0] },
-      { sc: byKey[`${shuffledCats[1]}|low`], hasDiscount: lowDisc[1] },
-      { sc: byKey[`${shuffledCats[2]}|high`], hasDiscount: highDisc[0] },
-      { sc: byKey[`${shuffledCats[3]}|high`], hasDiscount: highDisc[1] }
+    const chosenScenarios = shuffle([
+      byKey[`${shuffledCats[0]}|low`],
+      byKey[`${shuffledCats[1]}|low`],
+      byKey[`${shuffledCats[2]}|high`],
+      byKey[`${shuffledCats[3]}|high`]
     ]);
+
+    // Alternating task policies: Popular -> Diverse -> Popular -> Diverse (unless overridden)
+    const policies =
+      policyOverride === "popularity" || policyOverride === "diversity"
+        ? [policyOverride, policyOverride, policyOverride, policyOverride]
+        : ["popularity", "diversity", "popularity", "diversity"];
+
+    // Cross discount (0 vs 1) evenly across the two popularity slots (0,2) and two diversity slots (1,3)
+    const popDisc = shuffle([0, 1]);
+    const divDisc = shuffle([0, 1]);
+    const discounts = [popDisc[0], divDisc[0], popDisc[1], divDisc[1]];
+
+    return chosenScenarios.map((sc, idx) => ({
+      sc,
+      policyCondition: policies[idx],
+      isDiverse: policies[idx] === "diversity" ? 1 : 0,
+      hasDiscount: discounts[idx]
+    }));
   }
 
   function assignDynamicRatings(estList, lowList) {
@@ -212,17 +227,16 @@
         (isAgent ? `AGENT-${sessionId.slice(0, 6).toUpperCase()}` : `H-${sessionId.slice(0, 6).toUpperCase()}`);
 
       const polOverride = (payload.policy_override || "").trim().toLowerCase();
-      const policyCondition =
+      const sessionPolicy =
         polOverride === "popularity" || polOverride === "diversity"
           ? polOverride
-          : Math.random() < 0.5
-          ? "popularity"
-          : "diversity";
-      const isDiverse = policyCondition === "diversity" ? 1 : 0;
+          : "within_alternating";
+      const sessionIsDiverse = sessionPolicy === "diversity" ? 1 : 0;
 
-      const selectedPairs = select4StratifiedScenarios(studyData.scenarios);
+      const selectedPairs = select4StratifiedScenarios(studyData.scenarios, polOverride);
       const scenarioOrder = selectedPairs.map((p) => ({
         scenario_id: p.sc.scenario_id,
+        policy_condition: p.policyCondition,
         has_discount: p.hasDiscount
       }));
 
@@ -234,8 +248,8 @@
         decision_maker: dm,
         is_agent: isAgent,
         ai_model: aiModel,
-        policy_condition: policyCondition,
-        is_diverse: isDiverse,
+        policy_condition: sessionPolicy,
+        is_diverse: sessionIsDiverse,
         scenario_order_json: JSON.stringify(scenarioOrder),
         completed: 0
       });
@@ -245,11 +259,13 @@
 
       selectedPairs.forEach((pair, i) => {
         const sc = pair.sc;
+        const taskPolicy = pair.policyCondition;
+        const taskIsDiverse = pair.isDiverse;
         const hasDisc = pair.hasDiscount;
         const baseP = Number(sc.base_price_usd);
         const scIndex = i + 1;
 
-        const { ordered, lowTop2Pos } = buildScenarioOffers(sc, policyCondition);
+        const { ordered, lowTop2Pos } = buildScenarioOffers(sc, taskPolicy);
         const clientOffers = ordered.map((sel, rIdx) => {
           const rank = rIdx + 1;
           const isLow = Number(sel.is_low_history);
@@ -267,6 +283,8 @@
             scenario_id: sc.scenario_id,
             category_key: sc.category_key,
             product_involvement: sc.involvement,
+            policy_condition: taskPolicy,
+            is_diverse: taskIsDiverse,
             has_discount: hasDisc,
             discount_pct: offerDiscPct,
             base_price_usd: baseP,
@@ -293,6 +311,8 @@
           category_key: sc.category_key,
           category: sc.category,
           involvement: sc.involvement,
+          policy_condition: taskPolicy,
+          is_diverse: taskIsDiverse,
           has_discount: hasDisc,
           base_price_usd: baseP,
           product_title: sc.product_title,
@@ -317,8 +337,8 @@
         participant_code: pCode,
         decision_maker: dm,
         is_agent: isAgent,
-        policy_condition: policyCondition,
-        is_diverse: isDiverse,
+        policy_condition: sessionPolicy,
+        is_diverse: sessionIsDiverse,
         scenarios: clientScenarios
       };
     },
@@ -375,6 +395,8 @@
         scenario_id: offerRow.scenario_id,
         category_key: offerRow.category_key,
         product_involvement: offerRow.product_involvement,
+        policy_condition: offerRow.policy_condition,
+        is_diverse: offerRow.is_diverse,
         has_discount: offerRow.has_discount,
         discount_pct: offerRow.discount_pct,
         base_price_usd: offerRow.base_price_usd,
@@ -475,7 +497,8 @@
           [0, 1].forEach((hasDisc) => {
             const cRows = choices.filter((c) => {
               const s = sessMap[c.session_id];
-              return s && s.is_agent === isA && s.is_diverse === isD && c.has_discount === hasDisc;
+              const cDiv = c.is_diverse !== undefined && c.is_diverse !== null ? c.is_diverse : (s ? s.is_diverse : null);
+              return s && s.is_agent === isA && cDiv === isD && c.has_discount === hasDisc;
             });
             const n = cRows.length;
             const lowRate = n > 0 ? Number((cRows.reduce((a, r) => a + r.chose_low_history, 0) / n).toFixed(4)) : null;
@@ -541,7 +564,7 @@
             const s = sessMap[c.session_id];
             return [
               c.session_id, s.participant_code, s.prolific_pid, s.is_agent, s.decision_maker, s.ai_model,
-              s.is_diverse, s.policy_condition, c.scenario_index, c.scenario_id, c.category_key, c.product_involvement,
+              c.is_diverse ?? s.is_diverse, c.policy_condition || s.policy_condition, c.scenario_index, c.scenario_id, c.category_key, c.product_involvement,
               c.has_discount, c.discount_pct, c.base_price_usd, c.chosen_price_usd,
               c.chosen_seller_id, c.chosen_seller_name, c.chose_low_history, c.chosen_seller_group,
               c.chosen_seller_rating, c.chosen_seller_reviews, c.chosen_rank, c.low_history_top2_pos ?? "",
@@ -574,7 +597,7 @@
             const k = `${o.session_id}|${o.scenario_index}`;
             return [
               o.session_id, s.participant_code, s.is_agent, s.decision_maker, s.ai_model,
-              s.is_diverse, s.policy_condition, o.scenario_index, o.scenario_id, o.category_key,
+              o.is_diverse ?? s.is_diverse, o.policy_condition || s.policy_condition, o.scenario_index, o.scenario_id, o.category_key,
               o.product_involvement, o.has_discount, o.discount_pct, o.base_price_usd, o.offer_price_usd,
               o.offer_id, o.seller_id, o.seller_name, o.is_low_history, o.seller_group,
               o.seller_rating, o.seller_review_count, o.tenure_short,

@@ -149,8 +149,9 @@
     $("task-counter").textContent = `Task ${state.currentIndex + 1} of ${total}`;
     $("task-title").textContent = sc.product_title;
     $("task-prompt").textContent = sc.prompt;
+    const taskPolicy = sc.policy_condition || state.policyCondition;
     $("sort-label").textContent =
-      state.policyCondition === "diversity"
+      taskPolicy === "diversity"
         ? "Sorted by: Featured & Diverse"
         : "Sorted by: Most Popular";
     $("progress-pct").textContent = `${pct}%`;
