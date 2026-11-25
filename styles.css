@@ -642,6 +642,14 @@ h1, h2, h3, h4 {
   font-weight: 500;
 }
 
+.seller-rating-line,
+.seller-tenure-line {
+  font-size: 14.5px;
+  color: var(--text);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
 .offer-action-col {
   display: flex;
   flex-direction: column;

@@ -176,8 +176,11 @@
               <span class="muted">Sold by</span>
               <button type="button" class="seller-name-btn" data-action="open-seller">${escapeHtml(offer.seller_name)}</button>
             </div>
-            <div class="catalog-line">
-              Seller rating: <strong>${Number(offer.seller_rating).toFixed(1)} &#9733;</strong> (${formatInt(offer.seller_review_count)} ratings) &middot; ${escapeHtml(offer.tenure_short)}
+            <div class="seller-rating-line">
+              Seller rating: <span class="stars">${Number(offer.seller_rating).toFixed(1)} &#9733;</span> <span class="muted">(${formatInt(offer.seller_review_count)} ratings)</span>
+            </div>
+            <div class="seller-tenure-line">
+              ${offer.years_active > 0 ? `${offer.years_active} years active` : "&lt;1 year active"}
             </div>
           </div>
           <button type="button" class="btn btn-secondary btn-sm" data-action="open-offer">View Offer Details</button>
