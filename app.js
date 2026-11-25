@@ -165,6 +165,12 @@
             <span class="muted">(${formatInt(sc.product_review_count)} product reviews)</span>
             <span class="stock-pill">${escapeHtml(sc.availability)}</span>
           </div>
+          <div class="price-info-box">
+            <div class="price-tag">${formatUsd(offer.offer_price_usd)}</div>
+            <div class="delivery-line">${escapeHtml(sc.delivery_text)}</div>
+          </div>
+        </div>
+        <div class="offer-action-col">
           <div class="seller-info-box">
             <div class="seller-link-row">
               <span class="muted">Sold by</span>
@@ -174,10 +180,6 @@
               Seller rating: <strong>${Number(offer.seller_rating).toFixed(1)} &#9733;</strong> (${formatInt(offer.seller_review_count)} ratings) &middot; ${escapeHtml(offer.tenure_short)}
             </div>
           </div>
-        </div>
-        <div class="offer-action-col">
-          <div class="price-tag">${formatUsd(offer.offer_price_usd)}</div>
-          <div class="delivery-line">${escapeHtml(sc.delivery_text)}</div>
           <button type="button" class="btn btn-secondary btn-sm" data-action="open-offer">View Offer Details</button>
           <button type="button" class="select-offer-btn" data-action="select-offer" role="radio" aria-checked="false">Select This Offer</button>
         </div>
@@ -213,19 +215,13 @@
     });
 
     const sc = state.scenarios[state.currentIndex];
-    const sidebarBox = $("sidebar-selected-box");
     const stickyText = $("sticky-selection-text");
     const confirmBtn = $("btn-confirm-choice");
 
     if (state.selectedOffer && sc) {
-      sidebarBox.innerHTML = `
-        <strong>${escapeHtml(state.selectedOffer.seller_name)}</strong><br />
-        <span class="muted">${Number(state.selectedOffer.seller_rating).toFixed(1)} &#9733; (${formatInt(state.selectedOffer.seller_review_count)} ratings) &middot; <strong>${formatUsd(state.selectedOffer.offer_price_usd)}</strong></span>
-      `;
       stickyText.innerHTML = `Selected: <strong>${escapeHtml(state.selectedOffer.seller_name)}</strong> — <strong>${formatUsd(state.selectedOffer.offer_price_usd)}</strong>`;
       confirmBtn.disabled = false;
     } else {
-      sidebarBox.innerHTML = `<span class="muted">No offer selected yet.</span>`;
       stickyText.textContent = "Please select one offer above to continue.";
       confirmBtn.disabled = true;
     }

@@ -504,7 +504,7 @@ h1, h2, h3, h4 {
 
 .market-layout {
   display: grid;
-  grid-template-columns: 1fr 290px;
+  grid-template-columns: 1fr;
   gap: 20px;
   align-items: start;
 }
@@ -522,7 +522,7 @@ h1, h2, h3, h4 {
   border-radius: var(--radius);
   padding: 18px 20px;
   display: grid;
-  grid-template-columns: 132px 1fr 210px;
+  grid-template-columns: 132px 1fr 270px;
   gap: 20px;
   align-items: center;
   box-shadow: var(--shadow);
@@ -595,14 +595,22 @@ h1, h2, h3, h4 {
   border-radius: 6px;
 }
 
-.seller-info-box {
-  margin-top: 4px;
+.price-info-box {
+  margin-top: 6px;
   padding-top: 8px;
   border-top: 1px solid #eef2f6;
   display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.seller-info-box {
+  display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   font-size: 13px;
+  margin-bottom: 4px;
 }
 
 .seller-link-row {
