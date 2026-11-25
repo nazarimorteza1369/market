@@ -659,6 +659,31 @@ h1, h2, h3, h4 {
   padding-left: 18px;
 }
 
+.price-pair {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.price-pair-inline {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.price-pair-inline .price-tag {
+  font-size: 16px;
+}
+
+.price-original {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+
 .price-tag {
   font-size: 22px;
   font-weight: 800;

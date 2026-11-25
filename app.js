@@ -57,6 +57,14 @@
     return "$" + Number(val).toFixed(2);
   }
 
+  function renderPriceHtml(offer, sc) {
+    const isDiscounted = Number(offer.offer_price_usd) < Number(sc.base_price_usd);
+    if (isDiscounted) {
+      return `<span class="price-original">${formatUsd(sc.base_price_usd)}</span><span class="price-tag">${formatUsd(offer.offer_price_usd)}</span>`;
+    }
+    return `<span class="price-tag">${formatUsd(offer.offer_price_usd)}</span>`;
+  }
+
   function formatInt(val) {
     return Number(val).toLocaleString("en-US");
   }
@@ -166,7 +174,7 @@
             <span class="stock-pill">${escapeHtml(sc.availability)}</span>
           </div>
           <div class="price-info-box">
-            <div class="price-tag">${formatUsd(offer.offer_price_usd)}</div>
+            <div class="price-pair">${renderPriceHtml(offer, sc)}</div>
             <div class="delivery-line">${escapeHtml(sc.delivery_text)}</div>
           </div>
         </div>
@@ -241,7 +249,7 @@
       <div class="detail-grid">
         <div class="offer-img-box"><img src="${escapeHtml(sc.image_url)}" alt="${escapeHtml(sc.product_title)}" /></div>
         <div>
-          <div class="price-tag">${formatUsd(offer.offer_price_usd)}</div>
+          <div class="price-pair">${renderPriceHtml(offer, sc)}</div>
           <p class="offer-rating-line">
             <span class="stars">&#9733; ${Number(sc.product_rating).toFixed(1)}</span>
             <span class="muted">(${formatInt(sc.product_review_count)} product reviews)</span>
@@ -302,7 +310,7 @@
       <table class="spec-table">
         <tr><th>Storefront History</th><td>${escapeHtml(offer.tenure_text)}</td></tr>
         <tr><th>Product Offered</th><td>${escapeHtml(sc.product_title)}</td></tr>
-        <tr><th>Offer Price</th><td>${formatUsd(offer.offer_price_usd)}</td></tr>
+        <tr><th>Offer Price</th><td><span class="price-pair-inline">${renderPriceHtml(offer, sc)}</span></td></tr>
         <tr><th>Shipping</th><td>${escapeHtml(sc.delivery_text)}</td></tr>
         <tr><th>Return Policy</th><td>${escapeHtml(sc.return_policy)}</td></tr>
       </table>
