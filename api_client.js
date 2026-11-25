@@ -212,16 +212,20 @@
       selectedPairs.forEach((pair, i) => {
         const sc = pair.sc;
         const hasDisc = pair.hasDiscount;
-        const discPct = hasDisc === 1 ? Number(sc.discount_pct) : 0;
         const baseP = Number(sc.base_price_usd);
-        const discP = Number(sc.discounted_price_usd);
         const scIndex = i + 1;
 
         const { ordered, lowTop2Pos } = buildScenarioOffers(sc, policyCondition);
         const clientOffers = ordered.map((sel, rIdx) => {
           const rank = rIdx + 1;
           const isLow = Number(sel.is_low_history);
-          const offerP = hasDisc === 1 && isLow === 1 ? discP : baseP;
+          let offerDiscPct = 0;
+          if (hasDisc === 1 && isLow === 1) {
+            offerDiscPct = Number(sel.seller_rating) <= 4.65 ? 8.0 : 6.0;
+          }
+          const offerP = offerDiscPct > 0
+            ? Number((baseP * (1 - offerDiscPct / 100)).toFixed(2))
+            : baseP;
 
           const row = {
             session_id: sessionId,
@@ -230,7 +234,7 @@
             category_key: sc.category_key,
             product_involvement: sc.involvement,
             has_discount: hasDisc,
-            discount_pct: discPct,
+            discount_pct: offerDiscPct,
             base_price_usd: baseP,
             offer_price_usd: offerP,
             offer_id: sel.offer_id,
@@ -246,7 +250,7 @@
           };
           shownRows.push(row);
           cloudShownOffers[`${sessionId}|${scIndex}|${sel.offer_id}`] = row;
-          return Object.assign({}, sel, { display_rank: rank, offer_price_usd: offerP });
+          return Object.assign({}, sel, { display_rank: rank, offer_price_usd: offerP, discount_pct: offerDiscPct });
         });
 
         clientScenarios.push({
@@ -256,7 +260,6 @@
           category: sc.category,
           involvement: sc.involvement,
           has_discount: hasDisc,
-          discount_pct: discPct,
           base_price_usd: baseP,
           product_title: sc.product_title,
           image_url: sc.image_url,

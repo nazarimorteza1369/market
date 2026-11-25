@@ -169,8 +169,6 @@
           <h2 class="offer-title">${escapeHtml(sc.product_title)}</h2>
           <div class="offer-specs">${escapeHtml(sc.short_specs)}</div>
           <div class="offer-rating-line">
-            <span class="stars">&#9733; ${Number(sc.product_rating).toFixed(1)}</span>
-            <span class="muted">(${formatInt(sc.product_review_count)} product reviews)</span>
             <span class="stock-pill">${escapeHtml(sc.availability)}</span>
           </div>
           <div class="price-info-box">
@@ -250,10 +248,6 @@
         <div class="offer-img-box"><img src="${escapeHtml(sc.image_url)}" alt="${escapeHtml(sc.product_title)}" /></div>
         <div>
           <div class="price-pair">${renderPriceHtml(offer, sc)}</div>
-          <p class="offer-rating-line">
-            <span class="stars">&#9733; ${Number(sc.product_rating).toFixed(1)}</span>
-            <span class="muted">(${formatInt(sc.product_review_count)} product reviews)</span>
-          </p>
           <p class="small-note">${escapeHtml(sc.full_description)}</p>
         </div>
       </div>
