@@ -15,6 +15,7 @@
   const state = {
     sessionId: null,
     participantCode: "",
+    policyCondition: "popularity",
     scenarios: [],
     currentIndex: 0,
     selectedOffer: null,
@@ -122,6 +123,7 @@
       });
       state.sessionId = data.session_id;
       state.participantCode = data.participant_code;
+      state.policyCondition = data.policy_condition || "popularity";
       state.scenarios = data.scenarios;
       state.currentIndex = 0;
       renderScenario();
@@ -147,6 +149,10 @@
     $("task-counter").textContent = `Task ${state.currentIndex + 1} of ${total}`;
     $("task-title").textContent = sc.product_title;
     $("task-prompt").textContent = sc.prompt;
+    $("sort-label").textContent =
+      state.policyCondition === "diversity"
+        ? "Sorted by: Featured & Diverse"
+        : "Sorted by: Most Popular";
     $("progress-pct").textContent = `${pct}%`;
     $("progress-fill").style.width = `${pct}%`;
 

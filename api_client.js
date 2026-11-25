@@ -71,7 +71,10 @@
       s.seller_rating = lowScores[i];
     });
 
-    return { estRated: shuffle(estClones), lowRated: shuffle(lowClones) };
+    // Sort both groups strictly descending by seller_review_count (popularity) without shuffling names
+    const estSorted = estClones.sort((a, b) => Number(b.seller_review_count) - Number(a.seller_review_count));
+    const lowSorted = lowClones.sort((a, b) => Number(b.seller_review_count) - Number(a.seller_review_count));
+    return { estRated: estSorted, lowRated: lowSorted };
   }
 
   function buildScenarioOffers(scenario, policyCondition) {
@@ -85,9 +88,11 @@
         lowTop2Pos: null
       };
     }
-    // Top-2 Diversity Guarantee: promote a qualified low-history seller (rating >= 4.7) to Rank 1 or 2
-    const qualifiedIdx = lowRated.findIndex((s) => Number(s.seller_rating) >= 4.7);
-    const promoted = lowRated[qualifiedIdx >= 0 ? qualifiedIdx : 0];
+    // Top-2 Diversity Guarantee: promote a random qualified low-history seller (rating >= 4.7) to Rank 1 or 2
+    const qualifiedPool = lowRated.filter((s) => Number(s.seller_rating) >= 4.7);
+    const promoted = qualifiedPool.length > 0
+      ? qualifiedPool[Math.floor(Math.random() * qualifiedPool.length)]
+      : lowRated[0];
     const remainingLow = lowRated.filter((s) => s.offer_id !== promoted.offer_id);
     const pos = Math.random() < 0.5 ? 1 : 2;
     const topPart = estRated.slice(0, pos - 1).concat([promoted], estRated.slice(pos - 1));
