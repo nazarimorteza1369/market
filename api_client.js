@@ -50,20 +50,49 @@
     ]);
   }
 
+  function assignDynamicRatings(estList, lowList) {
+    // Established (>1000 ratings): 1 random gets 4.7; remaining 4 get [4.8, 4.6, 4.5, 4.4]
+    // in ascending order of review count (higher review count => lower rating).
+    const estClones = estList.map((s) => Object.assign({}, s));
+    const pickIdx = Math.floor(Math.random() * estClones.length);
+    estClones[pickIdx].seller_rating = 4.7;
+    const restEst = estClones
+      .filter((_, idx) => idx !== pickIdx)
+      .sort((a, b) => Number(a.seller_review_count) - Number(b.seller_review_count));
+    const restScores = [4.8, 4.6, 4.5, 4.4];
+    restEst.forEach((s, i) => {
+      s.seller_rating = restScores[i];
+    });
+
+    // Low-history: exact same 5 ratings [4.8, 4.7, 4.6, 4.5, 4.4] shuffled randomly (mean = 4.60).
+    const lowClones = lowList.map((s) => Object.assign({}, s));
+    const lowScores = shuffle([4.8, 4.7, 4.6, 4.5, 4.4]);
+    lowClones.forEach((s, i) => {
+      s.seller_rating = lowScores[i];
+    });
+
+    return { estRated: shuffle(estClones), lowRated: shuffle(lowClones) };
+  }
+
   function buildScenarioOffers(scenario, policyCondition) {
-    const estList = shuffle(scenario.sellers.filter((s) => s.is_low_history === 0));
-    const lowList = shuffle(scenario.sellers.filter((s) => s.is_low_history === 1));
+    const rawEst = scenario.sellers.filter((s) => s.is_low_history === 0);
+    const rawLow = scenario.sellers.filter((s) => s.is_low_history === 1);
+    const { estRated, lowRated } = assignDynamicRatings(rawEst, rawLow);
 
     if (policyCondition === "popularity") {
       return {
-        ordered: estList.concat(lowList),
+        ordered: estRated.concat(lowRated),
         lowTop2Pos: null
       };
     }
-    const pos = Math.random() < 0.5 ? 1 : 2; // Top-2 Diversity Guarantee (Rank 1 or Rank 2)
-    const topPart = estList.slice(0, pos - 1).concat([lowList[0]], estList.slice(pos - 1));
+    // Top-2 Diversity Guarantee: promote a qualified low-history seller (rating >= 4.7) to Rank 1 or 2
+    const qualifiedIdx = lowRated.findIndex((s) => Number(s.seller_rating) >= 4.7);
+    const promoted = lowRated[qualifiedIdx >= 0 ? qualifiedIdx : 0];
+    const remainingLow = lowRated.filter((s) => s.offer_id !== promoted.offer_id);
+    const pos = Math.random() < 0.5 ? 1 : 2;
+    const topPart = estRated.slice(0, pos - 1).concat([promoted], estRated.slice(pos - 1));
     return {
-      ordered: topPart.concat(lowList.slice(1)),
+      ordered: topPart.concat(remainingLow),
       lowTop2Pos: pos
     };
   }
