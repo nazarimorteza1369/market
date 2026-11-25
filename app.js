@@ -6,13 +6,11 @@
   const decisionMaker = rawType === "agent" ? "agent" : "human";
   const isAgent = decisionMaker === "agent";
   const prolificPid = (params.get("PROLIFIC_PID") || "").trim();
-  const studyIdParam = (params.get("STUDY_ID") || "").trim();
+  const studyId = (params.get("STUDY_ID") || "").trim();
   const aiModel = (params.get("model") || (isAgent ? "unspecified-agent" : "")).trim();
   const runId = (params.get("run_id") || "").trim();
   const policyOverride = (params.get("policy") || "").trim().toLowerCase();
   const forceSurvey = params.get("survey") === "1";
-  const rawLang = (params.get("lang") || "en").toLowerCase();
-  let currentLang = rawLang === "fa" ? "fa" : "en";
 
   const state = {
     sessionId: null,
@@ -37,64 +35,6 @@
     complete: $("view-complete")
   };
 
-  function dict() {
-    return (window.GAZIN_I18N && window.GAZIN_I18N[currentLang]) || window.GAZIN_I18N.en;
-  }
-
-  function applyLanguage(lang) {
-    currentLang = lang === "fa" ? "fa" : "en";
-    const t = dict();
-    document.documentElement.lang = currentLang;
-    document.documentElement.dir = t.dir;
-    document.title = t.pageTitle;
-    appRoot.setAttribute("data-lang", currentLang);
-
-    $("btn-lang-en").classList.toggle("active", currentLang === "en");
-    $("btn-lang-fa").classList.toggle("active", currentLang === "fa");
-
-    document.querySelectorAll("[data-i18n]").forEach((el) => {
-      const key = el.getAttribute("data-i18n");
-      if (typeof t[key] === "string") {
-        el.textContent = t[key];
-      }
-    });
-
-    document.querySelectorAll("[data-i18n-html]").forEach((el) => {
-      const key = el.getAttribute("data-i18n-html");
-      if (typeof t[key] === "string") {
-        el.innerHTML = t[key];
-      }
-    });
-
-    $("participant-code-input").placeholder = t.pidPlaceholder;
-    $("decision-rationale").placeholder = t.q4Placeholder;
-  }
-
-  function locScenario(sc) {
-    const t = dict();
-    if (t.scenarios && t.scenarios[sc.scenario_id]) {
-      return Object.assign({}, sc, t.scenarios[sc.scenario_id]);
-    }
-    return sc;
-  }
-
-  function locSellerName(offer) {
-    const t = dict();
-    if (t.sellers && t.sellers[offer.seller_id]) {
-      return t.sellers[offer.seller_id];
-    }
-    return offer.seller_name;
-  }
-
-  function locTenure(offer) {
-    const t = dict();
-    const raw = offer.tenure_label || `${offer.years_active} years`;
-    if (t.tenureMap && t.tenureMap[raw]) {
-      return t.tenureMap[raw];
-    }
-    return raw;
-  }
-
   function showView(name) {
     Object.keys(views).forEach((k) => {
       views[k].classList.toggle("hidden", k !== name);
@@ -106,7 +46,7 @@
   }
 
   function escapeHtml(str) {
-    return String(str)
+    return String(str == null ? "" : str)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
@@ -129,21 +69,13 @@
       session_id: state.sessionId,
       scenario_index: sc.scenario_index,
       scenario_id: sc.scenario_id,
-      policy_condition: sc.policy_condition || "",
-      is_diverse: sc.is_diverse != null ? sc.is_diverse : null,
       event_type: eventType,
       offer_id: offer ? offer.offer_id : "",
       seller_id: offer ? offer.seller_id : "",
-      seller_size: offer ? offer.seller_size : "",
+      seller_group: offer ? offer.seller_group : "",
       display_rank: offer ? offer.display_rank : null,
       duration_ms: durationMs || 0
     });
-  }
-
-  // Keep UI 100% identical between human and agent views
-  appRoot.setAttribute("data-decision-maker", decisionMaker);
-  if (isAgent) {
-    appRoot.setAttribute("data-ai-model", aiModel);
   }
 
   const pInput = $("participant-code-input");
@@ -153,12 +85,6 @@
     pInput.value = runId ? `${aiModel}-run-${runId}` : `${aiModel}-run`;
   }
 
-  // Language switcher listeners
-  $("btn-lang-en").addEventListener("click", () => applyLanguage("en"));
-  $("btn-lang-fa").addEventListener("click", () => applyLanguage("fa"));
-  applyLanguage(currentLang);
-
-  // Navigation handlers
   $("btn-to-consent").addEventListener("click", () => showView("consent"));
   $("btn-back-welcome").addEventListener("click", () => showView("welcome"));
   $("btn-back-consent").addEventListener("click", () => showView("consent"));
@@ -171,20 +97,17 @@
   });
 
   $("btn-start-tasks").addEventListener("click", async () => {
-    const t = dict();
     const btn = $("btn-start-tasks");
     const errBox = $("start-error");
     errBox.classList.add("hidden");
     btn.disabled = true;
-    btn.textContent = t.btnLoadingStudy;
-
-    const taggedStudyId = studyIdParam ? `${studyIdParam}|lang=${currentLang}` : `lang=${currentLang}`;
+    btn.textContent = "Loading Study...";
 
     try {
       const data = await window.GazinAPI.startSession({
         participant_code: state.participantCode,
         prolific_pid: prolificPid,
-        study_id: taggedStudyId,
+        study_id: studyId,
         decision_maker: decisionMaker,
         ai_model: aiModel,
         policy_override: policyOverride
@@ -200,25 +123,23 @@
       errBox.classList.remove("hidden");
     } finally {
       btn.disabled = false;
-      btn.textContent = t.btnBeginTasks;
+      btn.textContent = "Begin Shopping Tasks";
     }
   });
 
   function renderScenario() {
-    const t = dict();
-    const rawSc = state.scenarios[state.currentIndex];
-    const sc = locScenario(rawSc);
+    const sc = state.scenarios[state.currentIndex];
     const total = state.scenarios.length;
     const pct = Math.round(((state.currentIndex + 1) / total) * 100);
 
     state.selectedOffer = null;
     state.scenarioStartMs = Date.now();
 
-    $("header-breadcrumb").textContent = `${t.breadcrumbPrefix} › ${sc.category} › ${sc.product_title}`;
-    $("task-counter").textContent = t.taskOf(state.currentIndex + 1, total);
+    $("header-breadcrumb").textContent = `Marketplace › ${sc.category} › ${sc.product_title}`;
+    $("task-counter").textContent = `Task ${state.currentIndex + 1} of ${total}`;
     $("task-title").textContent = sc.product_title;
     $("task-prompt").textContent = sc.prompt;
-    $("progress-label-text").textContent = t.completePct(pct);
+    $("progress-pct").textContent = `${pct}%`;
     $("progress-fill").style.width = `${pct}%`;
 
     updateSelectionUI();
@@ -226,15 +147,11 @@
     const listEl = $("offers-list");
     listEl.innerHTML = "";
 
-    rawSc.offers.forEach((offer) => {
+    sc.offers.forEach((offer) => {
       const card = document.createElement("article");
       card.className = "offer-card";
       card.setAttribute("data-offer-id", offer.offer_id);
       card.setAttribute("data-seller-id", offer.seller_id);
-
-      const sName = locSellerName(offer);
-      const tenureStr = t.onPlatform(locTenure(offer));
-      const catalogStr = t.storeCatalog(formatInt(offer.active_products));
 
       card.innerHTML = `
         <div class="offer-img-box">
@@ -244,23 +161,25 @@
           <h2 class="offer-title">${escapeHtml(sc.product_title)}</h2>
           <div class="offer-specs">${escapeHtml(sc.short_specs)}</div>
           <div class="offer-rating-line">
-            <span class="stars"><bdi dir="ltr">&#9733; ${offer.seller_rating.toFixed(1)}</bdi></span>
-            <span class="muted">(<bdi dir="ltr">${formatInt(offer.seller_review_count)}</bdi> ${escapeHtml(t.sellerRatingsWord)})</span>
+            <span class="stars">&#9733; ${Number(sc.product_rating).toFixed(1)}</span>
+            <span class="muted">(${formatInt(sc.product_review_count)} product reviews)</span>
             <span class="stock-pill">${escapeHtml(sc.availability)}</span>
           </div>
           <div class="seller-info-box">
             <div class="seller-link-row">
-              <span class="muted">${escapeHtml(t.soldBy)}</span>
-              <button type="button" class="seller-name-btn" data-action="open-seller">${escapeHtml(sName)}</button>
+              <span class="muted">Sold by</span>
+              <button type="button" class="seller-name-btn" data-action="open-seller">${escapeHtml(offer.seller_name)}</button>
             </div>
-            <div class="catalog-line"><strong>${escapeHtml(tenureStr)}</strong> &middot; ${escapeHtml(catalogStr)}</div>
+            <div class="catalog-line">
+              Seller rating: <strong>${Number(offer.seller_rating).toFixed(1)} &#9733;</strong> (${formatInt(offer.seller_review_count)} ratings) &middot; ${escapeHtml(offer.tenure_short)}
+            </div>
           </div>
         </div>
         <div class="offer-action-col">
-          <div class="price-tag"><bdi dir="ltr">${formatUsd(sc.price_usd)}</bdi></div>
+          <div class="price-tag">${formatUsd(offer.offer_price_usd)}</div>
           <div class="delivery-line">${escapeHtml(sc.delivery_text)}</div>
-          <button type="button" class="btn btn-secondary btn-sm" data-action="open-offer">${escapeHtml(t.btnViewOffer)}</button>
-          <button type="button" class="select-offer-btn" data-action="select-offer" role="radio" aria-checked="false">${escapeHtml(t.btnSelectOffer)}</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-action="open-offer">View Offer Details</button>
+          <button type="button" class="select-offer-btn" data-action="select-offer" role="radio" aria-checked="false">Select This Offer</button>
         </div>
       `;
 
@@ -281,7 +200,6 @@
   }
 
   function updateSelectionUI() {
-    const t = dict();
     const cards = document.querySelectorAll(".offer-card");
     cards.forEach((card) => {
       const oid = card.getAttribute("data-offer-id");
@@ -290,65 +208,56 @@
       const btn = card.querySelector('[data-action="select-offer"]');
       if (btn) {
         btn.setAttribute("aria-checked", isSelected ? "true" : "false");
-        btn.textContent = isSelected ? t.btnSelectedOffer : t.btnSelectOffer;
+        btn.textContent = isSelected ? "Selected ✓" : "Select This Offer";
       }
     });
 
-    const rawSc = state.scenarios[state.currentIndex];
-    const sc = rawSc ? locScenario(rawSc) : null;
+    const sc = state.scenarios[state.currentIndex];
     const sidebarBox = $("sidebar-selected-box");
     const stickyText = $("sticky-selection-text");
     const confirmBtn = $("btn-confirm-choice");
 
     if (state.selectedOffer && sc) {
-      const sName = locSellerName(state.selectedOffer);
-      const tLbl = locTenure(state.selectedOffer);
       sidebarBox.innerHTML = `
-        <strong>${escapeHtml(sName)}</strong><br />
-        <span class="muted"><bdi dir="ltr">${state.selectedOffer.seller_rating.toFixed(1)} &#9733;</bdi> (<bdi dir="ltr">${formatInt(state.selectedOffer.seller_review_count)}</bdi> ${escapeHtml(t.ratingsWord)}) &middot; ${escapeHtml(tLbl)}</span>
+        <strong>${escapeHtml(state.selectedOffer.seller_name)}</strong><br />
+        <span class="muted">${Number(state.selectedOffer.seller_rating).toFixed(1)} &#9733; (${formatInt(state.selectedOffer.seller_review_count)} ratings) &middot; <strong>${formatUsd(state.selectedOffer.offer_price_usd)}</strong></span>
       `;
-      stickyText.innerHTML = t.selectedSticky(escapeHtml(sName), formatUsd(sc.price_usd));
+      stickyText.innerHTML = `Selected: <strong>${escapeHtml(state.selectedOffer.seller_name)}</strong> — <strong>${formatUsd(state.selectedOffer.offer_price_usd)}</strong>`;
       confirmBtn.disabled = false;
     } else {
-      sidebarBox.innerHTML = `<span class="muted">${escapeHtml(t.noOfferSelected)}</span>`;
-      stickyText.textContent = t.stickyPrompt;
+      sidebarBox.innerHTML = `<span class="muted">No offer selected yet.</span>`;
+      stickyText.textContent = "Please select one offer above to continue.";
       confirmBtn.disabled = true;
     }
   }
 
-  // Offer Detail Modal
   function openOfferModal(offer, sc) {
-    const t = dict();
     state.activeModalOffer = offer;
     state.activeModalType = "offer";
     state.modalOpenedMs = Date.now();
     logEvent("offer_detail_opened", offer, 0);
-
-    const sName = locSellerName(offer);
-    const tenureStr = t.onPlatform(locTenure(offer));
 
     $("offer-modal-title").textContent = sc.product_title;
     $("offer-modal-content").innerHTML = `
       <div class="detail-grid">
         <div class="offer-img-box"><img src="${escapeHtml(sc.image_url)}" alt="${escapeHtml(sc.product_title)}" /></div>
         <div>
-          <div class="price-tag"><bdi dir="ltr">${formatUsd(sc.price_usd)}</bdi></div>
+          <div class="price-tag">${formatUsd(offer.offer_price_usd)}</div>
           <p class="offer-rating-line">
-            <span class="stars"><bdi dir="ltr">&#9733; ${offer.seller_rating.toFixed(1)}</bdi></span>
-            <span class="muted">(<bdi dir="ltr">${formatInt(offer.seller_review_count)}</bdi> ${escapeHtml(t.sellerRatingsWord)})</span>
+            <span class="stars">&#9733; ${Number(sc.product_rating).toFixed(1)}</span>
+            <span class="muted">(${formatInt(sc.product_review_count)} product reviews)</span>
           </p>
           <p class="small-note">${escapeHtml(sc.full_description)}</p>
         </div>
       </div>
       <table class="spec-table">
-        <tr><th>${escapeHtml(t.specSeller)}</th><td>${escapeHtml(sName)} (<bdi dir="ltr">${offer.seller_rating.toFixed(1)} &#9733;</bdi>, <bdi dir="ltr">${formatInt(offer.seller_review_count)}</bdi> ${escapeHtml(t.ratingsWord)})</td></tr>
-        <tr><th>${escapeHtml(t.specTenure)}</th><td>${escapeHtml(tenureStr)}</td></tr>
-        <tr><th>${escapeHtml(t.specCatalog)}</th><td>${escapeHtml(t.productsInStore(formatInt(offer.active_products)))}</td></tr>
-        <tr><th>${escapeHtml(t.specKeySpecs)}</th><td>${escapeHtml(sc.short_specs)}</td></tr>
-        <tr><th>${escapeHtml(t.specShipping)}</th><td>${escapeHtml(sc.delivery_text)}</td></tr>
-        <tr><th>${escapeHtml(t.specWarranty)}</th><td>${escapeHtml(sc.warranty)}</td></tr>
-        <tr><th>${escapeHtml(t.specReturns)}</th><td>${escapeHtml(sc.return_policy)}</td></tr>
-        <tr><th>${escapeHtml(t.specAvailability)}</th><td>${escapeHtml(sc.availability)}</td></tr>
+        <tr><th>Seller</th><td>${escapeHtml(offer.seller_name)} (${Number(offer.seller_rating).toFixed(1)} &#9733;, ${formatInt(offer.seller_review_count)} ratings)</td></tr>
+        <tr><th>Time on Marketplace</th><td>${escapeHtml(offer.tenure_text)}</td></tr>
+        <tr><th>Key Specifications</th><td>${escapeHtml(sc.short_specs)}</td></tr>
+        <tr><th>Shipping</th><td>${escapeHtml(sc.delivery_text)}</td></tr>
+        <tr><th>Warranty</th><td>${escapeHtml(sc.warranty)}</td></tr>
+        <tr><th>Return Policy</th><td>${escapeHtml(sc.return_policy)}</td></tr>
+        <tr><th>Availability</th><td>${escapeHtml(sc.availability)}</td></tr>
       </table>
     `;
     $("modal-offer").classList.remove("hidden");
@@ -368,39 +277,35 @@
     closeOfferModal();
   });
 
-  // Seller Profile Modal
   function openSellerModal(offer, sc) {
-    const t = dict();
     state.activeModalOffer = offer;
     state.activeModalType = "seller";
     state.modalOpenedMs = Date.now();
     logEvent("seller_profile_opened", offer, 0);
 
-    const sName = locSellerName(offer);
-    const tLbl = locTenure(offer);
-
-    $("seller-modal-title").textContent = sName;
+    $("seller-modal-title").textContent = offer.seller_name;
     $("seller-modal-content").innerHTML = `
-      <p class="muted">${escapeHtml(t.verifiedLine(tLbl, offer.on_time_rate))}</p>
+      <p class="muted">Verified storefront on Gazin Market &middot; ${escapeHtml(offer.on_time_rate)} on-time delivery</p>
       <div class="stat-cards-3">
         <div class="stat-tile">
-          <div class="stat-val"><bdi dir="ltr">${offer.seller_rating.toFixed(1)} &#9733;</bdi></div>
-          <div class="stat-lbl">${escapeHtml(t.statSellerRating)}</div>
+          <div class="stat-val">${Number(offer.seller_rating).toFixed(1)} &#9733;</div>
+          <div class="stat-lbl">Seller Star Rating</div>
         </div>
         <div class="stat-tile">
-          <div class="stat-val"><bdi dir="ltr">${formatInt(offer.seller_review_count)}</bdi></div>
-          <div class="stat-lbl">${escapeHtml(t.statCustomerRatings)}</div>
+          <div class="stat-val">${formatInt(offer.seller_review_count)}</div>
+          <div class="stat-lbl">Customer Ratings</div>
         </div>
         <div class="stat-tile">
-          <div class="stat-val"><bdi dir="ltr">${formatInt(offer.active_products)}</bdi></div>
-          <div class="stat-lbl">${escapeHtml(t.statProductsInStore)}</div>
+          <div class="stat-val">${escapeHtml(offer.tenure_short.replace(" active", ""))}</div>
+          <div class="stat-lbl">Marketplace Tenure</div>
         </div>
       </div>
       <table class="spec-table">
-        <tr><th>${escapeHtml(t.specProductOffered)}</th><td>${escapeHtml(sc.product_title)}</td></tr>
-        <tr><th>${escapeHtml(t.specOfferPrice)}</th><td><bdi dir="ltr">${formatUsd(sc.price_usd)}</bdi></td></tr>
-        <tr><th>${escapeHtml(t.specShipping)}</th><td>${escapeHtml(sc.delivery_text)}</td></tr>
-        <tr><th>${escapeHtml(t.specReturns)}</th><td>${escapeHtml(sc.return_policy)}</td></tr>
+        <tr><th>Storefront History</th><td>${escapeHtml(offer.tenure_text)}</td></tr>
+        <tr><th>Product Offered</th><td>${escapeHtml(sc.product_title)}</td></tr>
+        <tr><th>Offer Price</th><td>${formatUsd(offer.offer_price_usd)}</td></tr>
+        <tr><th>Shipping</th><td>${escapeHtml(sc.delivery_text)}</td></tr>
+        <tr><th>Return Policy</th><td>${escapeHtml(sc.return_policy)}</td></tr>
       </table>
     `;
     $("modal-seller").classList.remove("hidden");
@@ -420,17 +325,10 @@
     closeSellerModal();
   });
 
-  // Choice Confirmation Modal
   $("btn-confirm-choice").addEventListener("click", () => {
     if (!state.selectedOffer) return;
-    const t = dict();
-    const sc = locScenario(state.scenarios[state.currentIndex]);
-    const sName = locSellerName(state.selectedOffer);
-    $("confirm-modal-body").innerHTML = t.confirmModalBody(
-      escapeHtml(sc.product_title),
-      escapeHtml(sName),
-      formatUsd(sc.price_usd)
-    );
+    const sc = state.scenarios[state.currentIndex];
+    $("confirm-modal-body").innerHTML = `You are selecting <strong>${escapeHtml(sc.product_title)}</strong> from seller <strong>${escapeHtml(state.selectedOffer.seller_name)}</strong> for <strong>${formatUsd(state.selectedOffer.offer_price_usd)}</strong>.`;
     $("modal-confirm").classList.remove("hidden");
   });
 
@@ -440,10 +338,9 @@
 
   $("btn-submit-choice").addEventListener("click", async () => {
     if (!state.selectedOffer) return;
-    const t = dict();
     const btn = $("btn-submit-choice");
     btn.disabled = true;
-    btn.textContent = t.btnSaving;
+    btn.textContent = "Saving...";
     const sc = state.scenarios[state.currentIndex];
     const decisionTimeMs = Date.now() - state.scenarioStartMs;
 
@@ -471,26 +368,25 @@
       alert("Error saving selection: " + err.message);
     } finally {
       btn.disabled = false;
-      btn.textContent = t.btnYesConfirm;
+      btn.textContent = "Yes, Confirm Offer";
     }
   });
 
-  // Survey Submission
   $("survey-form").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const t = dict();
     const errBox = $("survey-error");
     errBox.classList.add("hidden");
     const btn = $("btn-submit-survey");
     btn.disabled = true;
-    btn.textContent = t.btnSubmitting;
+    btn.textContent = "Submitting...";
 
     try {
       const res = await window.GazinAPI.submitSurvey({
         session_id: state.sessionId,
         attention_answer: $("attention-check").value,
-        noticed_seller_size: $("noticed-size").value,
-        size_influence_rating: $("size-influence").value,
+        noticed_seller_history: $("noticed-history").value,
+        history_influence_rating: $("history-influence").value,
+        noticed_price_diff: $("noticed-price").value,
         decision_rationale: $("decision-rationale").value,
         age_group: $("age-group").value,
         shopping_frequency: $("shopping-freq").value
@@ -500,7 +396,7 @@
       errBox.textContent = "Submission error: " + err.message;
       errBox.classList.remove("hidden");
       btn.disabled = false;
-      btn.textContent = t.btnSubmitStudy;
+      btn.textContent = "Submit Study";
     }
   });
 
@@ -511,12 +407,11 @@
   }
 
   $("btn-copy-code").addEventListener("click", () => {
-    const t = dict();
     const txt = $("completion-code-text").textContent;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(txt).then(() => {
-        $("btn-copy-code").textContent = t.btnCopied;
-        setTimeout(() => { $("btn-copy-code").textContent = t.btnCopyCode; }, 1800);
+        $("btn-copy-code").textContent = "Copied!";
+        setTimeout(() => { $("btn-copy-code").textContent = "Copy Code"; }, 1800);
       });
     }
   });

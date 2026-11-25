@@ -4,21 +4,20 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gazin Market | Product Selection Study</title>
-  <link rel="icon" type="image/svg+xml" href="./images/gazin-logo.svg" />
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
   <header class="site-header">
     <div class="container header-inner">
       <div class="brand-group">
-        <img src="./images/gazin-logo.svg" alt="Gazin Market" class="brand-logo-img" width="42" height="42" />
+        <div class="brand-logo" aria-hidden="true">G</div>
         <div>
-          <div class="brand-name" data-i18n="brandName">Gazin Market</div>
-          <div class="brand-sub" id="header-breadcrumb" data-i18n="headerSubDefault">Marketplace &rsaquo; Shopping Simulation</div>
+          <div class="brand-name">Gazin Market</div>
+          <div class="brand-sub" id="header-breadcrumb">Marketplace &rsaquo; Shopping Simulation</div>
         </div>
       </div>
       <div class="header-badges">
-        <span class="sim-badge" data-i18n="simBadge">Academic Research Simulation &middot; No Real Payment</span>
+        <span class="sim-badge">Academic Research Simulation &middot; No Real Payment</span>
       </div>
     </div>
   </header>
@@ -26,43 +25,35 @@
   <main class="container main-shell" id="app-root" data-study-status="onboarding">
     <!-- STEP 1: WELCOME -->
     <section id="view-welcome" class="card-panel view-section">
-      <div class="lang-bar">
-        <span class="lang-bar-label" data-i18n="langLabel">Choose Language / انتخاب زبان</span>
-        <div class="lang-btn-group" role="group" aria-label="Language selector">
-          <button type="button" class="lang-btn active" id="btn-lang-en" data-lang="en">English</button>
-          <button type="button" class="lang-btn" id="btn-lang-fa" data-lang="fa">فارسی</button>
-        </div>
-      </div>
-
       <div class="step-pills">
-        <span class="pill active" data-i18n="step1">1. Welcome</span>
-        <span class="pill" data-i18n="step2">2. Consent</span>
-        <span class="pill" data-i18n="step3">3. Instructions</span>
-        <span class="pill" data-i18n="step4">4. Shopping Tasks</span>
+        <span class="pill active">1. Welcome</span>
+        <span class="pill">2. Consent</span>
+        <span class="pill">3. Instructions</span>
+        <span class="pill">4. Shopping Tasks</span>
       </div>
       <div class="welcome-grid">
         <div>
-          <span class="eyebrow" data-i18n="eyebrowWelcome">Consumer Choice Study</span>
-          <h1 data-i18n="welcomeTitle">Compare Marketplace Offers &amp; Choose a Seller</h1>
-          <p class="lead" data-i18n="welcomeLead">
-            In this study, you will review four everyday online shopping tasks. In each task, six different sellers offer the exact same product at the same price. Please evaluate the offers as you would in a real online store and select one seller to purchase from.
+          <span class="eyebrow">Consumer Choice Study</span>
+          <h1>Compare Marketplace Offers &amp; Choose a Seller</h1>
+          <p class="lead">
+            In this study, you will review four everyday online shopping tasks. In each task, ten different sellers offer the exact same product. Please evaluate the available offers as you would in a real online store and select one seller to purchase from.
           </p>
           <div class="info-chips">
-            <span class="chip" data-i18n="chipTime">Estimated time: 5–7 minutes</span>
-            <span class="chip" data-i18n="chipTasks">4 shopping tasks &middot; 6 offers each</span>
-            <span class="chip" data-i18n="chipCurrency">USD pricing &middot; No real payment</span>
+            <span class="chip">Estimated time: 5–7 minutes</span>
+            <span class="chip">4 shopping tasks &middot; 10 offers each</span>
+            <span class="chip">US English &middot; USD pricing</span>
           </div>
           <div class="actions-row">
-            <button id="btn-to-consent" class="btn btn-primary btn-lg" data-i18n="btnStart">Get Started</button>
+            <button id="btn-to-consent" class="btn btn-primary btn-lg">Get Started</button>
           </div>
         </div>
         <aside class="summary-box">
-          <h3 data-i18n="expectTitle">What to Expect</h3>
+          <h3>What to Expect</h3>
           <ul>
-            <li data-i18n-html="expect1"><strong>Identical Products:</strong> Within each task, all six offers are for the exact same item.</li>
-            <li data-i18n-html="expect2"><strong>Seller Information:</strong> Each listing shows the seller's name, rating, number of ratings, tenure, and store catalog size.</li>
-            <li data-i18n-html="expect3"><strong>Detailed Views:</strong> You can click to view full product specifications or any seller's profile before deciding.</li>
-            <li data-i18n-html="expect4"><strong>No Real Purchases:</strong> No payment details, shipping address, or email are requested.</li>
+            <li><strong>Identical Product:</strong> Within each task, all ten offers are for the exact same item with identical shipping and warranty.</li>
+            <li><strong>Seller Information:</strong> Each listing displays the seller's name, star rating, customer rating count, and time active on the marketplace.</li>
+            <li><strong>Detailed Views:</strong> You can click to view full offer details or any seller's profile before deciding.</li>
+            <li><strong>No Real Purchases:</strong> No payment details, shipping address, or email are requested.</li>
           </ul>
         </aside>
       </div>
@@ -71,32 +62,32 @@
     <!-- STEP 2: INFORMED CONSENT -->
     <section id="view-consent" class="card-panel view-section hidden">
       <div class="step-pills">
-        <span class="pill done" data-i18n="step1">1. Welcome</span>
-        <span class="pill active" data-i18n="step2">2. Consent</span>
-        <span class="pill" data-i18n="step3">3. Instructions</span>
-        <span class="pill" data-i18n="step4">4. Shopping Tasks</span>
+        <span class="pill done">1. Welcome</span>
+        <span class="pill active">2. Consent</span>
+        <span class="pill">3. Instructions</span>
+        <span class="pill">4. Shopping Tasks</span>
       </div>
-      <h2 data-i18n="consentTitle">Informed Consent &amp; Participant ID</h2>
+      <h2>Informed Consent &amp; Participant ID</h2>
       <div class="consent-box">
-        <p data-i18n-html="consentP1"><strong>Purpose of Study:</strong> This academic research examines how shoppers evaluate online marketplace listings and choose among different sellers.</p>
-        <p data-i18n-html="consentP2"><strong>Simulation Notice:</strong> Gazin Market is a simulated research storefront. No real transaction, payment, or shipment occurs.</p>
-        <p data-i18n-html="consentP3"><strong>Confidentiality &amp; Voluntary Participation:</strong> We record your product selections, click/view interactions, response times, and brief post-task responses anonymously for academic analysis. We do not collect names, emails, or financial information. Your participation is completely voluntary, and you may exit at any time prior to final submission.</p>
+        <p><strong>Purpose of Study:</strong> This academic research examines how shoppers evaluate online marketplace listings and choose among different sellers.</p>
+        <p><strong>Simulation Notice:</strong> Gazin Market is a simulated research storefront. No real transaction, payment, or shipment occurs.</p>
+        <p><strong>Confidentiality &amp; Voluntary Participation:</strong> We record your product selections, click/view interactions, response times, and brief post-task responses anonymously for academic analysis. We do not collect names, emails, or financial information. Your participation is completely voluntary, and you may exit at any time prior to final submission.</p>
       </div>
 
       <form id="consent-form" class="form-stack">
         <div class="form-field">
-          <label for="participant-code-input" id="participant-id-label" data-i18n-html="pidLabel">Participant ID <span class="muted">(optional or pre-filled from study link)</span></label>
+          <label for="participant-code-input" id="participant-id-label">Participant ID <span class="muted">(optional or pre-filled from study link)</span></label>
           <input type="text" id="participant-code-input" class="text-input" placeholder="e.g., P-1042 or Prolific ID" maxlength="64" />
         </div>
 
         <label class="checkbox-row">
           <input type="checkbox" id="consent-checkbox" required />
-          <span data-i18n="consentCheck">I have read the information above and voluntarily agree to participate in this study.</span>
+          <span>I have read the information above and voluntarily agree to participate in this study.</span>
         </label>
 
         <div class="actions-row">
-          <button type="button" id="btn-back-welcome" class="btn btn-secondary" data-i18n="btnBack">Back</button>
-          <button type="submit" class="btn btn-primary btn-lg" data-i18n="btnToInst">Continue to Instructions</button>
+          <button type="button" id="btn-back-welcome" class="btn btn-secondary">Back</button>
+          <button type="submit" class="btn btn-primary btn-lg">Continue to Instructions</button>
         </div>
       </form>
     </section>
@@ -104,39 +95,39 @@
     <!-- STEP 3: INSTRUCTIONS -->
     <section id="view-instructions" class="card-panel view-section hidden">
       <div class="step-pills">
-        <span class="pill done" data-i18n="step1">1. Welcome</span>
-        <span class="pill done" data-i18n="step2">2. Consent</span>
-        <span class="pill active" data-i18n="step3">3. Instructions</span>
-        <span class="pill" data-i18n="step4">4. Shopping Tasks</span>
+        <span class="pill done">1. Welcome</span>
+        <span class="pill done">2. Consent</span>
+        <span class="pill active">3. Instructions</span>
+        <span class="pill">4. Shopping Tasks</span>
       </div>
-      <h2 data-i18n="instTitle">Task Instructions</h2>
+      <h2>Task Instructions</h2>
       <div class="instruction-cards">
         <div class="inst-card">
           <div class="inst-num">1</div>
           <div>
-            <h4 data-i18n="inst1Title">Read Each Shopping Goal</h4>
-            <p data-i18n="inst1Body">You will complete 4 short shopping tasks in sequence. Read the brief scenario prompt at the top of each page.</p>
+            <h4>Read Each Shopping Goal</h4>
+            <p>You will complete 4 short shopping tasks in sequence. Read the brief scenario prompt at the top of each page.</p>
           </div>
         </div>
         <div class="inst-card">
           <div class="inst-num">2</div>
           <div>
-            <h4 data-i18n="inst2Title">Review the 6 Available Offers</h4>
-            <p data-i18n-html="inst2Body">Examine the offers listed on the page. You may click <strong>View Offer Details</strong> or any <strong>seller's name</strong> to inspect additional details.</p>
+            <h4>Review the 10 Available Offers</h4>
+            <p>Examine the offers listed on the page. You may click <strong>View Offer Details</strong> or any <strong>seller's name</strong> to inspect additional details.</p>
           </div>
         </div>
         <div class="inst-card">
           <div class="inst-num">3</div>
           <div>
-            <h4 data-i18n="inst3Title">Select &amp; Confirm One Seller</h4>
-            <p data-i18n-html="inst3Body">Choose the single offer you prefer and click <strong>Confirm &amp; Continue</strong>. Once confirmed, choices cannot be changed.</p>
+            <h4>Select &amp; Confirm One Seller</h4>
+            <p>Choose the single offer you prefer and click <strong>Confirm &amp; Continue</strong>. Once confirmed, choices cannot be changed.</p>
           </div>
         </div>
       </div>
       <div id="start-error" class="alert-error hidden"></div>
       <div class="actions-row">
-        <button type="button" id="btn-back-consent" class="btn btn-secondary" data-i18n="btnBack">Back</button>
-        <button type="button" id="btn-start-tasks" class="btn btn-primary btn-lg" data-i18n="btnBeginTasks">Begin Shopping Tasks</button>
+        <button type="button" id="btn-back-consent" class="btn btn-secondary">Back</button>
+        <button type="button" id="btn-start-tasks" class="btn btn-primary btn-lg">Begin Shopping Tasks</button>
       </div>
     </section>
 
@@ -149,14 +140,14 @@
             <h1 class="task-product-heading" id="task-title">Product Title</h1>
           </div>
           <div class="progress-wrap">
-            <div class="progress-label" id="progress-label-text">25% Complete</div>
+            <div class="progress-label"><span id="progress-pct">25%</span> Complete</div>
             <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width: 25%;"></div></div>
           </div>
         </div>
         <p class="task-prompt" id="task-prompt"></p>
         <div class="listing-meta-bar">
-          <span data-i18n="offersAvail">6 offers available &middot; Default sort</span>
-          <span class="muted" data-i18n="sameProductNote">All 6 offers below are for the exact same product</span>
+          <span>10 offers available &middot; Default sort</span>
+          <span class="muted">All 10 offers below are for the exact same product</span>
         </div>
       </div>
 
@@ -165,15 +156,15 @@
 
         <aside class="market-sidebar">
           <div class="card-panel sidebar-box">
-            <h3 data-i18n="sidebarTitle">Your Selection</h3>
-            <p class="sidebar-hint" data-i18n-html="sidebarHint">Review the seller information on each offer card. Click any seller name or <em>View Offer Details</em> for additional details.</p>
+            <h3>Your Selection</h3>
+            <p class="sidebar-hint">Review the seller and offer information on each card. Click any seller name or <em>View Offer Details</em> for full details.</p>
             <ul class="sidebar-checklist">
-              <li data-i18n="sideCheck1">Same product &amp; price across all 6 sellers</li>
-              <li data-i18n="sideCheck2">Seller rating &amp; total customer ratings shown</li>
-              <li data-i18n="sideCheck3">Seller tenure &amp; store catalog shown per seller</li>
+              <li>Exact same product, shipping &amp; warranty</li>
+              <li>Seller rating &amp; review history shown</li>
+              <li>Offer price displayed on each listing</li>
             </ul>
             <div class="selected-preview" id="sidebar-selected-box">
-              <span class="muted" data-i18n="noOfferSelected">No offer selected yet.</span>
+              <span class="muted">No offer selected yet.</span>
             </div>
           </div>
         </aside>
@@ -182,80 +173,90 @@
 
     <!-- STEP 5: POST-STUDY QUESTIONNAIRE (HUMANS) -->
     <section id="view-survey" class="card-panel view-section hidden">
-      <span class="eyebrow" data-i18n="eyebrowFinal">Final Step</span>
-      <h2 data-i18n="surveyTitle">Post-Study Questionnaire</h2>
-      <p class="muted" data-i18n="surveySub">Please answer these brief questions to complete the study.</p>
+      <span class="eyebrow">Final Step</span>
+      <h2>Post-Study Questionnaire</h2>
+      <p class="muted">Please answer these brief questions to complete the study.</p>
 
       <form id="survey-form" class="form-stack">
         <div class="form-field">
-          <label for="attention-check" data-i18n-html="q1Label">1. To verify careful reading, please select <strong>"Strongly Disagree"</strong> for this item. <span class="req">*</span></label>
+          <label for="attention-check">1. To verify careful reading, please select <strong>"Strongly Disagree"</strong> for this item. <span class="req">*</span></label>
           <select id="attention-check" class="text-input" required>
-            <option value="" data-i18n="q1Opt0">Select an option...</option>
-            <option value="strongly_agree" data-i18n="q1Opt1">Strongly Agree</option>
-            <option value="agree" data-i18n="q1Opt2">Agree</option>
-            <option value="neutral" data-i18n="q1Opt3">Neutral</option>
-            <option value="disagree" data-i18n="q1Opt4">Disagree</option>
-            <option value="strongly_disagree" data-i18n="q1Opt5">Strongly Disagree</option>
+            <option value="">Select an option...</option>
+            <option value="strongly_agree">Strongly Agree</option>
+            <option value="agree">Agree</option>
+            <option value="neutral">Neutral</option>
+            <option value="disagree">Disagree</option>
+            <option value="strongly_disagree">Strongly Disagree</option>
           </select>
         </div>
 
         <div class="form-field">
-          <label for="noticed-size" data-i18n-html="q2Label">2. Did you notice differences in sellers' history and track record (such as years active, number of ratings, and store catalog)? <span class="req">*</span></label>
-          <select id="noticed-size" class="text-input" required>
-            <option value="" data-i18n="q2Opt0">Select an option...</option>
-            <option value="yes_clearly" data-i18n="q2Opt1">Yes, I clearly noticed differences in seller history and scale</option>
-            <option value="yes_somewhat" data-i18n="q2Opt2">Yes, I somewhat noticed</option>
-            <option value="no" data-i18n="q2Opt3">No, I did not notice</option>
+          <label for="noticed-history">2. Did you notice differences in sellers' transaction history (number of customer ratings and time active on the marketplace)? <span class="req">*</span></label>
+          <select id="noticed-history" class="text-input" required>
+            <option value="">Select an option...</option>
+            <option value="yes_clearly">Yes, I clearly noticed differences in seller rating counts / tenure</option>
+            <option value="yes_somewhat">Yes, I somewhat noticed</option>
+            <option value="no">No, I did not notice</option>
           </select>
         </div>
 
         <div class="form-field">
-          <label for="size-influence" data-i18n-html="q3Label">3. How much did a seller's history and established presence (tenure, rating count, store catalog) influence your choices? (1 = Not at all, 7 = Very strongly) <span class="req">*</span></label>
-          <select id="size-influence" class="text-input" required>
-            <option value="" data-i18n="q3Opt0">Select rating (1–7)...</option>
-            <option value="1" data-i18n="q3Opt1">1 — Not at all</option>
+          <label for="history-influence">3. How much did a seller's transaction history (number of ratings / time active) influence your choices? (1 = Not at all, 7 = Very strongly) <span class="req">*</span></label>
+          <select id="history-influence" class="text-input" required>
+            <option value="">Select rating (1–7)...</option>
+            <option value="1">1 — Not at all</option>
             <option value="2">2</option>
             <option value="3">3</option>
-            <option value="4" data-i18n="q3Opt4">4 — Moderately</option>
+            <option value="4">4 — Moderately</option>
             <option value="5">5</option>
             <option value="6">6</option>
-            <option value="7" data-i18n="q3Opt7">7 — Very strongly</option>
+            <option value="7">7 — Very strongly</option>
           </select>
         </div>
 
         <div class="form-field">
-          <label for="decision-rationale" data-i18n-html="q4Label">4. Briefly, what guided your seller choices across the four tasks? <span class="muted">(optional)</span></label>
-          <textarea id="decision-rationale" class="text-input" rows="3" placeholder="e.g., listing position, seller history, ratings, store catalog..."></textarea>
+          <label for="noticed-price">4. Across the shopping tasks, did you notice price differences among sellers offering the same product? <span class="req">*</span></label>
+          <select id="noticed-price" class="text-input" required>
+            <option value="">Select an option...</option>
+            <option value="yes_clearly">Yes, I clearly noticed lower prices from some sellers</option>
+            <option value="yes_somewhat">Yes, I somewhat noticed</option>
+            <option value="no">No, all prices seemed identical</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="decision-rationale">5. Briefly, what guided your seller choices across the four tasks? <span class="muted">(optional)</span></label>
+          <textarea id="decision-rationale" class="text-input" rows="3" placeholder="e.g., price, seller review count, listing position, star rating..."></textarea>
         </div>
 
         <div class="two-col-fields">
           <div class="form-field">
-            <label for="age-group" data-i18n-html="q5Label">5. Age Group <span class="req">*</span></label>
+            <label for="age-group">6. Age Group <span class="req">*</span></label>
             <select id="age-group" class="text-input" required>
-              <option value="" data-i18n="q5Opt0">Select...</option>
+              <option value="">Select...</option>
               <option value="18-24">18–24</option>
               <option value="25-34">25–34</option>
               <option value="35-44">35–44</option>
               <option value="45-54">45–54</option>
-              <option value="55+" data-i18n="q5Opt5">55 or older</option>
-              <option value="prefer_not" data-i18n="q5Opt6">Prefer not to say</option>
+              <option value="55+">55 or older</option>
+              <option value="prefer_not">Prefer not to say</option>
             </select>
           </div>
           <div class="form-field">
-            <label for="shopping-freq" data-i18n-html="q6Label">6. How often do you shop online? <span class="req">*</span></label>
+            <label for="shopping-freq">7. How often do you shop online? <span class="req">*</span></label>
             <select id="shopping-freq" class="text-input" required>
-              <option value="" data-i18n="q6Opt0">Select...</option>
-              <option value="weekly" data-i18n="q6Opt1">Weekly or more</option>
-              <option value="monthly" data-i18n="q6Opt2">A few times a month</option>
-              <option value="occasionally" data-i18n="q6Opt3">Every few months</option>
-              <option value="rarely" data-i18n="q6Opt4">Rarely</option>
+              <option value="">Select...</option>
+              <option value="weekly">Weekly or more</option>
+              <option value="monthly">A few times a month</option>
+              <option value="occasionally">Every few months</option>
+              <option value="rarely">Rarely</option>
             </select>
           </div>
         </div>
 
         <div id="survey-error" class="alert-error hidden"></div>
         <div class="actions-row">
-          <button type="submit" class="btn btn-primary btn-lg" id="btn-submit-survey" data-i18n="btnSubmitStudy">Submit Study</button>
+          <button type="submit" class="btn btn-primary btn-lg" id="btn-submit-survey">Submit Study</button>
         </div>
       </form>
     </section>
@@ -264,14 +265,14 @@
     <section id="view-complete" class="card-panel view-section hidden">
       <div class="complete-box">
         <div class="complete-icon" aria-hidden="true">&#10003;</div>
-        <h2 data-i18n="completeTitle">Thank You for Completing the Study!</h2>
-        <p class="lead" data-i18n="completeLead">Your responses have been recorded securely.</p>
+        <h2>Thank You for Completing the Study!</h2>
+        <p class="lead">Your responses have been recorded securely.</p>
         <div class="completion-code-box">
-          <span class="muted" data-i18n="completeCodeLabel">Completion Code:</span>
+          <span class="muted">Completion Code:</span>
           <strong id="completion-code-text">GAZIN-2026-COMPLETE</strong>
-          <button type="button" id="btn-copy-code" class="btn btn-secondary btn-sm" data-i18n="btnCopyCode">Copy Code</button>
+          <button type="button" id="btn-copy-code" class="btn btn-secondary btn-sm">Copy Code</button>
         </div>
-        <p class="muted small-note" data-i18n="completeNote">You may now close this window or return to Prolific to submit your completion code.</p>
+        <p class="muted small-note">You may now close this window or return to Prolific to submit your completion code.</p>
       </div>
     </section>
   </main>
@@ -279,20 +280,20 @@
   <!-- STICKY BOTTOM SELECTION BAR -->
   <div id="sticky-bar" class="sticky-bar hidden">
     <div class="container sticky-inner">
-      <div id="sticky-selection-text" class="sticky-text" data-i18n="stickyPrompt">Please select one offer above to continue.</div>
-      <button id="btn-confirm-choice" class="btn btn-primary btn-lg" disabled data-i18n="btnConfirmContinue">Confirm &amp; Continue</button>
+      <div id="sticky-selection-text" class="sticky-text">Please select one offer above to continue.</div>
+      <button id="btn-confirm-choice" class="btn btn-primary btn-lg" disabled>Confirm &amp; Continue</button>
     </div>
   </div>
 
   <!-- CONFIRMATION MODAL -->
   <div id="modal-confirm" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
     <div class="modal-card">
-      <h3 id="confirm-modal-title" data-i18n="confirmModalTitle">Confirm Your Selection</h3>
+      <h3 id="confirm-modal-title">Confirm Your Selection</h3>
       <p id="confirm-modal-body"></p>
-      <p class="muted small-note" data-i18n="confirmModalNote">Once confirmed, you will move to the next step and cannot edit this selection.</p>
+      <p class="muted small-note">Once confirmed, you will move to the next step and cannot edit this selection.</p>
       <div class="modal-actions">
-        <button type="button" id="btn-cancel-confirm" class="btn btn-secondary" data-i18n="btnGoBack">Go Back</button>
-        <button type="button" id="btn-submit-choice" class="btn btn-primary" data-i18n="btnYesConfirm">Yes, Confirm Offer</button>
+        <button type="button" id="btn-cancel-confirm" class="btn btn-secondary">Go Back</button>
+        <button type="button" id="btn-submit-choice" class="btn btn-primary">Yes, Confirm Offer</button>
       </div>
     </div>
   </div>
@@ -306,8 +307,8 @@
       </div>
       <div id="offer-modal-content"></div>
       <div class="modal-actions">
-        <button type="button" id="btn-offer-back" class="btn btn-secondary" data-i18n="btnBackToOffers">Back to Offers</button>
-        <button type="button" id="btn-offer-select" class="btn btn-primary" data-i18n="btnSelectOffer">Select This Offer</button>
+        <button type="button" id="btn-offer-back" class="btn btn-secondary">Back to Offers</button>
+        <button type="button" id="btn-offer-select" class="btn btn-primary">Select This Offer</button>
       </div>
     </div>
   </div>
@@ -321,14 +322,13 @@
       </div>
       <div id="seller-modal-content"></div>
       <div class="modal-actions">
-        <button type="button" id="btn-seller-back" class="btn btn-secondary" data-i18n="btnBackToOffers">Back to Offers</button>
-        <button type="button" id="btn-seller-select" class="btn btn-primary" data-i18n="btnSelectSellerOffer">Select Offer from This Seller</button>
+        <button type="button" id="btn-seller-back" class="btn btn-secondary">Back to Offers</button>
+        <button type="button" id="btn-seller-select" class="btn btn-primary">Select Offer from This Seller</button>
       </div>
     </div>
   </div>
 
   <script src="./config.js"></script>
-  <script src="./i18n.js"></script>
   <script src="./api_client.js"></script>
   <script src="./app.js"></script>
 </body>

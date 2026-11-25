@@ -32,14 +32,16 @@
     data.cells.forEach((cell) => {
       const tr = document.createElement("tr");
       const rateStr =
-        cell.small_choice_rate === null ? "—" : `${(cell.small_choice_rate * 100).toFixed(1)}%`;
+        cell.low_history_choice_rate === null ? "—" : `${(cell.low_history_choice_rate * 100).toFixed(1)}%`;
       const hhi01Str = cell.hhi_0_1 === null ? "—" : Number(cell.hhi_0_1).toFixed(4);
       const hhi10kStr = cell.hhi_10000 === null ? "—" : cell.hhi_10000;
       const inspStr = cell.avg_inspected_offers === null ? "—" : cell.avg_inspected_offers;
+      const discLabel = cell.has_discount === 1 ? "6–8% Off (1)" : "0% Equal Price (0)";
 
       tr.innerHTML = `
         <td><strong>${cell.decision_maker === "agent" ? "AI Agent (1)" : "Human (0)"}</strong></td>
-        <td>${cell.policy_condition === "diversity" ? "Diversity Guarantee (1)" : "Popularity (0)"}</td>
+        <td>${cell.policy_condition === "diversity" ? "Top-2 Diversity (1)" : "Popularity (0)"}</td>
+        <td>${discLabel}</td>
         <td>${cell.n_choices}</td>
         <td><strong>${rateStr}</strong></td>
         <td>${hhi01Str}</td>
@@ -78,10 +80,13 @@
   }
 
   function updateLinkBuilders() {
-    const baseUrl = window.location.href.split("?")[0].replace(/\/admin(\.html)?$/i, "").replace(/\/+$/, "");
-    $("url-human").textContent = `${baseUrl}/?type=human&lang=en`;
-    $("url-human-fa").textContent = `${baseUrl}/?type=human&lang=fa`;
-    $("url-prolific").textContent = `${baseUrl}/?type=human&lang=en&PROLIFIC_PID={{%PROLIFIC_PID%}}&STUDY_ID={{%STUDY_ID%}}`;
+    const baseUrl = window.location.href
+      .split("?")[0]
+      .split("#")[0]
+      .replace(/\/admin(\.html)?$/i, "")
+      .replace(/\/+$/, "");
+    $("url-human").textContent = `${baseUrl}/?type=human`;
+    $("url-prolific").textContent = `${baseUrl}/?type=human&PROLIFIC_PID={{%PROLIFIC_PID%}}&STUDY_ID={{%STUDY_ID%}}`;
 
     const model = ($("builder-model").value || "gpt-4o").trim();
     const policy = $("builder-policy").value;

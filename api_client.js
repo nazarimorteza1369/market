@@ -6,7 +6,6 @@
   const SUPABASE_ANON_KEY = (cfg.supabaseAnonKey || "").trim();
   const IS_CLOUD = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
-  // In-memory inspection tracker for cloud mode
   const cloudInspected = {};
   const cloudShownOffers = {};
 
@@ -32,41 +31,40 @@
     return a;
   }
 
-  // Assign counterbalanced 2 popularity + 2 diversity (1 low + 1 high each) in randomized order
-  function assignScenarioPolicies(scenarios, policyOverride) {
-    if (policyOverride === "popularity" || policyOverride === "diversity") {
-      return shuffle(scenarios).map((sc) => ({
-        scenario: sc,
-        policy: policyOverride
-      }));
-    }
-    const low = shuffle(scenarios.filter((s) => s.involvement === "low"));
-    const high = shuffle(scenarios.filter((s) => s.involvement === "high"));
-    const paired = [];
-    low.forEach((sc, idx) => paired.push({ scenario: sc, policy: idx % 2 === 0 ? "popularity" : "diversity" }));
-    high.forEach((sc, idx) => paired.push({ scenario: sc, policy: idx % 2 === 0 ? "popularity" : "diversity" }));
-    return shuffle(paired);
+  function select4StratifiedScenarios(allScenarios) {
+    const byKey = {};
+    const cats = [];
+    allScenarios.forEach((sc) => {
+      if (!cats.includes(sc.category_key)) cats.push(sc.category_key);
+      byKey[`${sc.category_key}|${sc.involvement}`] = sc;
+    });
+    const shuffledCats = shuffle(cats);
+    const lowDisc = shuffle([0, 1]);
+    const highDisc = shuffle([0, 1]);
+
+    return shuffle([
+      { sc: byKey[`${shuffledCats[0]}|low`], hasDiscount: lowDisc[0] },
+      { sc: byKey[`${shuffledCats[1]}|low`], hasDiscount: lowDisc[1] },
+      { sc: byKey[`${shuffledCats[2]}|high`], hasDiscount: highDisc[0] },
+      { sc: byKey[`${shuffledCats[3]}|high`], hasDiscount: highDisc[1] }
+    ]);
   }
 
   function buildScenarioOffers(scenario, policyCondition) {
-    const largeList = shuffle(scenario.sellers.filter((s) => s.seller_size === "large"));
-    const smallList = shuffle(scenario.sellers.filter((s) => s.seller_size === "small"));
+    const estList = shuffle(scenario.sellers.filter((s) => s.is_low_history === 0));
+    const lowList = shuffle(scenario.sellers.filter((s) => s.is_low_history === 1));
 
     if (policyCondition === "popularity") {
       return {
-        ordered: [largeList[0], largeList[1], largeList[2], smallList[0], smallList[1], smallList[2]],
-        smallTop3Pos: null
+        ordered: estList.concat(lowList),
+        lowTop2Pos: null
       };
     }
-    const qualifiedSmall = shuffle(smallList.filter((s) => s.seller_rating >= 4.7));
-    const promotedSmall = qualifiedSmall.length > 0 ? qualifiedSmall[0] : smallList[0];
-    const remainingSmall = shuffle(smallList.filter((s) => s.offer_id !== promotedSmall.offer_id));
-    const pos = Math.floor(Math.random() * 2) + 1; // 1 or 2
-    const top3 = [largeList[0], largeList[1], largeList[2]];
-    const topPart = top3.slice(0, pos - 1).concat([promotedSmall], top3.slice(pos - 1));
+    const pos = Math.random() < 0.5 ? 1 : 2; // Top-2 Diversity Guarantee (Rank 1 or Rank 2)
+    const topPart = estList.slice(0, pos - 1).concat([lowList[0]], estList.slice(pos - 1));
     return {
-      ordered: topPart.concat([remainingSmall[0], remainingSmall[1]]),
-      smallTop3Pos: pos
+      ordered: topPart.concat(lowList.slice(1)),
+      lowTop2Pos: pos
     };
   }
 
@@ -130,25 +128,29 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  function extractLanguage(studyId) {
-    return String(studyId || "").toLowerCase().includes("lang=fa") ? "fa" : "en";
-  }
-
-  function computeHHI(sellerIds) {
-    const n = sellerIds.length;
-    if (n === 0) return { hhi01: null, hhi10k: null };
-    const counts = {};
-    sellerIds.forEach((sid) => {
-      counts[sid] = (counts[sid] || 0) + 1;
+  function computeMeanWithinProductHHI(choiceRows) {
+    if (!choiceRows || choiceRows.length === 0) return { hhi01: null, hhi10k: null };
+    const byProd = {};
+    choiceRows.forEach((r) => {
+      if (!byProd[r.scenario_id]) byProd[r.scenario_id] = [];
+      byProd[r.scenario_id].push(r.chosen_seller_id);
     });
-    let sumSq = 0;
-    Object.values(counts).forEach((c) => {
-      const share = c / n;
-      sumSq += share * share;
+    const prodHhis = Object.values(byProd).map((sids) => {
+      const n = sids.length;
+      const counts = {};
+      sids.forEach((id) => (counts[id] = (counts[id] || 0) + 1));
+      let sq = 0;
+      Object.values(counts).forEach((c) => {
+        const sh = c / n;
+        sq += sh * sh;
+      });
+      return sq;
     });
+    if (prodHhis.length === 0) return { hhi01: null, hhi10k: null };
+    const meanVal = prodHhis.reduce((a, b) => a + b, 0) / prodHhis.length;
     return {
-      hhi01: Number(sumSq.toFixed(4)),
-      hhi10k: Math.round(sumSq * 10000)
+      hhi01: Number(meanVal.toFixed(4)),
+      hhi10k: Math.round(meanVal * 10000)
     };
   }
 
@@ -176,13 +178,19 @@
         (isAgent ? `AGENT-${sessionId.slice(0, 6).toUpperCase()}` : `H-${sessionId.slice(0, 6).toUpperCase()}`);
 
       const polOverride = (payload.policy_override || "").trim().toLowerCase();
-      const sessionPolicy =
-        polOverride === "popularity" || polOverride === "diversity" ? polOverride : "within_mixed";
-      const sessionIsDiverse =
-        sessionPolicy === "diversity" ? 1 : sessionPolicy === "popularity" ? 0 : null;
+      const policyCondition =
+        polOverride === "popularity" || polOverride === "diversity"
+          ? polOverride
+          : Math.random() < 0.5
+          ? "popularity"
+          : "diversity";
+      const isDiverse = policyCondition === "diversity" ? 1 : 0;
 
-      const assigned = assignScenarioPolicies(studyData.scenarios, polOverride);
-      const scenarioOrder = assigned.map((a) => `${a.scenario.scenario_id}:${a.policy}`);
+      const selectedPairs = select4StratifiedScenarios(studyData.scenarios);
+      const scenarioOrder = selectedPairs.map((p) => ({
+        scenario_id: p.sc.scenario_id,
+        has_discount: p.hasDiscount
+      }));
 
       await supaReq("sessions", "POST", SUPABASE_ANON_KEY, {
         session_id: sessionId,
@@ -192,8 +200,8 @@
         decision_maker: dm,
         is_agent: isAgent,
         ai_model: aiModel,
-        policy_condition: sessionPolicy,
-        is_diverse: sessionIsDiverse,
+        policy_condition: policyCondition,
+        is_diverse: isDiverse,
         scenario_order_json: JSON.stringify(scenarioOrder),
         completed: 0
       });
@@ -201,51 +209,57 @@
       const shownRows = [];
       const clientScenarios = [];
 
-      assigned.forEach((item, i) => {
-        const sc = item.scenario;
-        const scPolicy = item.policy;
-        const scIsDiverse = scPolicy === "diversity" ? 1 : 0;
+      selectedPairs.forEach((pair, i) => {
+        const sc = pair.sc;
+        const hasDisc = pair.hasDiscount;
+        const discPct = hasDisc === 1 ? Number(sc.discount_pct) : 0;
+        const baseP = Number(sc.base_price_usd);
+        const discP = Number(sc.discounted_price_usd);
         const scIndex = i + 1;
-        const { ordered, smallTop3Pos } = buildScenarioOffers(sc, scPolicy);
 
+        const { ordered, lowTop2Pos } = buildScenarioOffers(sc, policyCondition);
         const clientOffers = ordered.map((sel, rIdx) => {
           const rank = rIdx + 1;
-          const isSmall = sel.seller_size === "small" ? 1 : 0;
+          const isLow = Number(sel.is_low_history);
+          const offerP = hasDisc === 1 && isLow === 1 ? discP : baseP;
+
           const row = {
             session_id: sessionId,
             scenario_index: scIndex,
             scenario_id: sc.scenario_id,
+            category_key: sc.category_key,
             product_involvement: sc.involvement,
-            policy_condition: scPolicy,
-            is_diverse: scIsDiverse,
+            has_discount: hasDisc,
+            discount_pct: discPct,
+            base_price_usd: baseP,
+            offer_price_usd: offerP,
             offer_id: sel.offer_id,
             seller_id: sel.seller_id,
             seller_name: sel.seller_name,
-            seller_size: sel.seller_size,
-            is_small_seller: isSmall,
-            active_products: sel.active_products,
+            seller_group: sel.seller_group,
+            is_low_history: isLow,
             seller_rating: sel.seller_rating,
             seller_review_count: sel.seller_review_count,
-            years_active: sel.tenure_months,
-            price_usd: sc.price_usd,
+            tenure_short: sel.tenure_short,
             display_rank: rank,
-            small_top3_position: smallTop3Pos
+            low_history_top2_pos: lowTop2Pos
           };
           shownRows.push(row);
           cloudShownOffers[`${sessionId}|${scIndex}|${sel.offer_id}`] = row;
-          return Object.assign({}, sel, { display_rank: rank });
+          return Object.assign({}, sel, { display_rank: rank, offer_price_usd: offerP });
         });
 
         clientScenarios.push({
           scenario_index: scIndex,
           scenario_id: sc.scenario_id,
+          category_key: sc.category_key,
           category: sc.category,
           involvement: sc.involvement,
-          policy_condition: scPolicy,
-          is_diverse: scIsDiverse,
+          has_discount: hasDisc,
+          discount_pct: discPct,
+          base_price_usd: baseP,
           product_title: sc.product_title,
           image_url: sc.image_url,
-          price_usd: sc.price_usd,
           product_rating: sc.product_rating,
           product_review_count: sc.product_review_count,
           short_specs: sc.short_specs,
@@ -266,8 +280,8 @@
         participant_code: pCode,
         decision_maker: dm,
         is_agent: isAgent,
-        policy_condition: sessionPolicy,
-        is_diverse: sessionIsDiverse,
+        policy_condition: policyCondition,
+        is_diverse: isDiverse,
         scenarios: clientScenarios
       };
     },
@@ -288,19 +302,17 @@
       ) {
         const key = `${payload.session_id}|${payload.scenario_index}`;
         if (!cloudInspected[key]) cloudInspected[key] = {};
-        cloudInspected[key][payload.offer_id] = payload.seller_size || "";
+        cloudInspected[key][payload.offer_id] = payload.seller_group || "";
       }
 
       supaReq("events", "POST", SUPABASE_ANON_KEY, {
         session_id: payload.session_id,
         scenario_index: payload.scenario_index,
         scenario_id: payload.scenario_id,
-        policy_condition: payload.policy_condition || "",
-        is_diverse: payload.is_diverse != null ? payload.is_diverse : null,
         event_type: payload.event_type,
         offer_id: payload.offer_id || "",
         seller_id: payload.seller_id || "",
-        seller_size: payload.seller_size || "",
+        seller_group: payload.seller_group || "",
         display_rank: payload.display_rank != null ? payload.display_rank : null,
         duration_ms: payload.duration_ms || 0
       }).catch(() => {});
@@ -317,30 +329,31 @@
       const inspMap = cloudInspected[`${payload.session_id}|${payload.scenario_index}`] || {};
       const inspVals = Object.values(inspMap);
       const inspCount = inspVals.length;
-      const inspSmall = inspVals.filter((v) => v === "small").length;
-      const inspLarge = inspVals.filter((v) => v === "large").length;
+      const inspLow = inspVals.filter((v) => v === "low_history").length;
+      const inspEst = inspVals.filter((v) => v === "established").length;
 
       await supaReq("choices", "POST", SUPABASE_ANON_KEY, {
         session_id: payload.session_id,
         scenario_index: payload.scenario_index,
         scenario_id: offerRow.scenario_id,
+        category_key: offerRow.category_key,
         product_involvement: offerRow.product_involvement,
-        policy_condition: offerRow.policy_condition,
-        is_diverse: offerRow.is_diverse,
+        has_discount: offerRow.has_discount,
+        discount_pct: offerRow.discount_pct,
+        base_price_usd: offerRow.base_price_usd,
+        chosen_price_usd: offerRow.offer_price_usd,
         offer_id: offerRow.offer_id,
         chosen_seller_id: offerRow.seller_id,
         chosen_seller_name: offerRow.seller_name,
-        chose_small: offerRow.is_small_seller,
-        chosen_seller_size: offerRow.seller_size,
-        chosen_active_products: offerRow.active_products,
+        chose_low_history: offerRow.is_low_history,
+        chosen_seller_group: offerRow.seller_group,
         chosen_seller_rating: offerRow.seller_rating,
-        chosen_seller_review_count: offerRow.seller_review_count,
-        chosen_years_active: offerRow.years_active,
+        chosen_seller_reviews: offerRow.seller_review_count,
         chosen_rank: offerRow.display_rank,
-        small_top3_position: offerRow.small_top3_position,
+        low_history_top2_pos: offerRow.low_history_top2_pos,
         inspected_count: inspCount,
-        inspected_small: inspSmall,
-        inspected_large: inspLarge,
+        inspected_low_history: inspLow,
+        inspected_established: inspEst,
         decision_time_ms: payload.decision_time_ms || 0
       });
 
@@ -357,8 +370,9 @@
         completed: 1,
         passed_attention_check: passedAtt,
         attention_answer: payload.attention_answer || "",
-        noticed_seller_size: payload.noticed_seller_size || "",
-        size_influence_rating: payload.size_influence_rating ? Number(payload.size_influence_rating) : null,
+        noticed_seller_history: payload.noticed_seller_history || "",
+        history_influence_rating: payload.history_influence_rating ? Number(payload.history_influence_rating) : null,
+        noticed_price_diff: payload.noticed_price_diff || "",
         decision_rationale: payload.decision_rationale || "",
         age_group: payload.age_group || "",
         shopping_frequency: payload.shopping_frequency || "",
@@ -381,13 +395,12 @@
       return { ok: true, completion_code: code };
     },
 
-    // --- Admin helpers ---
     async adminFetchAllCloud(serviceKey) {
       const [sessions, choices, shownOffers, events] = await Promise.all([
         supaReq("sessions?select=*&order=created_at.desc&limit=5000", "GET", serviceKey),
         supaReq("choices?select=*&order=created_at.asc&limit=20000", "GET", serviceKey),
-        supaReq("shown_offers?select=*&order=id.asc&limit=50000", "GET", serviceKey),
-        supaReq("events?select=*&order=event_id.asc&limit=50000", "GET", serviceKey)
+        supaReq("shown_offers?select=*&order=id.asc&limit=80000", "GET", serviceKey),
+        supaReq("events?select=*&order=event_id.asc&limit=80000", "GET", serviceKey)
       ]);
       return { sessions: sessions || [], choices: choices || [], shownOffers: shownOffers || [], events: events || [] };
     },
@@ -422,26 +435,27 @@
           ["popularity", 0],
           ["diversity", 1]
         ].forEach(([pol, isD]) => {
-          const cRows = choices.filter((c) => {
-            const s = sessMap[c.session_id];
-            if (!s || s.is_agent !== isA) return false;
-            const rowIsDiv = c.is_diverse !== null && c.is_diverse !== undefined ? c.is_diverse : s.is_diverse;
-            return rowIsDiv === isD;
-          });
-          const n = cRows.length;
-          const smallRate = n > 0 ? Number((cRows.reduce((a, r) => a + r.chose_small, 0) / n).toFixed(4)) : null;
-          const avgInsp = n > 0 ? Number((cRows.reduce((a, r) => a + r.inspected_count, 0) / n).toFixed(2)) : null;
-          const hhi = computeHHI(cRows.map((r) => r.chosen_seller_id));
-          cells.push({
-            decision_maker: dm,
-            is_agent: isA,
-            policy_condition: pol,
-            is_diverse: isD,
-            n_choices: n,
-            small_choice_rate: smallRate,
-            hhi_0_1: hhi.hhi01,
-            hhi_10000: hhi.hhi10k,
-            avg_inspected_offers: avgInsp
+          [0, 1].forEach((hasDisc) => {
+            const cRows = choices.filter((c) => {
+              const s = sessMap[c.session_id];
+              return s && s.is_agent === isA && s.is_diverse === isD && c.has_discount === hasDisc;
+            });
+            const n = cRows.length;
+            const lowRate = n > 0 ? Number((cRows.reduce((a, r) => a + r.chose_low_history, 0) / n).toFixed(4)) : null;
+            const avgInsp = n > 0 ? Number((cRows.reduce((a, r) => a + r.inspected_count, 0) / n).toFixed(2)) : null;
+            const hhi = computeMeanWithinProductHHI(cRows);
+            cells.push({
+              decision_maker: dm,
+              is_agent: isA,
+              policy_condition: pol,
+              is_diverse: isD,
+              has_discount: hasDisc,
+              n_choices: n,
+              low_history_choice_rate: lowRate,
+              hhi_0_1: hhi.hhi01,
+              hhi_10000: hhi.hhi10k,
+              avg_inspected_offers: avgInsp
+            });
           });
         });
       });
@@ -475,36 +489,38 @@
 
       if (fileType === "choices.csv") {
         const headers = [
-          "session_id","participant_code","prolific_pid","language","is_agent","decision_maker","ai_model",
-          "is_diverse","policy_condition","scenario_index","scenario_id","product_involvement",
-          "chosen_seller_id","chosen_seller_name","chose_small","chosen_seller_size",
-          "chosen_active_products","chosen_seller_rating","chosen_seller_review_count","chosen_tenure_months",
-          "chosen_rank","small_top2_position","inspected_count","inspected_small","inspected_large",
-          "decision_time_ms","passed_attention_check","noticed_seller_size","size_influence_rating","created_at"
+          "session_id","participant_code","prolific_pid","is_agent","decision_maker","ai_model",
+          "is_diverse","policy_condition","scenario_index","scenario_id","category_key","product_involvement",
+          "has_discount","discount_pct","base_price_usd","chosen_price_usd",
+          "chosen_seller_id","chosen_seller_name","chose_low_history","chosen_seller_group",
+          "chosen_seller_rating","chosen_seller_reviews","chosen_rank","low_history_top2_pos",
+          "inspected_count","inspected_low_history","inspected_established",
+          "decision_time_ms","passed_attention_check","noticed_seller_history",
+          "history_influence_rating","noticed_price_diff","created_at"
         ];
         const rows = choices
           .filter((c) => sessMap[c.session_id])
           .map((c) => {
             const s = sessMap[c.session_id];
-            const isDiv = c.is_diverse !== null && c.is_diverse !== undefined ? c.is_diverse : s.is_diverse;
-            const polCond = c.policy_condition || s.policy_condition;
             return [
-              c.session_id, s.participant_code, s.prolific_pid, extractLanguage(s.study_id), s.is_agent, s.decision_maker, s.ai_model,
-              isDiv, polCond, c.scenario_index, c.scenario_id, c.product_involvement,
-              c.chosen_seller_id, c.chosen_seller_name, c.chose_small, c.chosen_seller_size,
-              c.chosen_active_products, c.chosen_seller_rating ?? "", c.chosen_seller_review_count ?? "", c.chosen_years_active ?? "",
-              c.chosen_rank, c.small_top3_position ?? "", c.inspected_count, c.inspected_small, c.inspected_large,
-              c.decision_time_ms, s.passed_attention_check ?? "", s.noticed_seller_size, s.size_influence_rating ?? "",
-              c.created_at
+              c.session_id, s.participant_code, s.prolific_pid, s.is_agent, s.decision_maker, s.ai_model,
+              s.is_diverse, s.policy_condition, c.scenario_index, c.scenario_id, c.category_key, c.product_involvement,
+              c.has_discount, c.discount_pct, c.base_price_usd, c.chosen_price_usd,
+              c.chosen_seller_id, c.chosen_seller_name, c.chose_low_history, c.chosen_seller_group,
+              c.chosen_seller_rating, c.chosen_seller_reviews, c.chosen_rank, c.low_history_top2_pos ?? "",
+              c.inspected_count, c.inspected_low_history, c.inspected_established,
+              c.decision_time_ms, s.passed_attention_check ?? "", s.noticed_seller_history,
+              s.history_influence_rating ?? "", s.noticed_price_diff, c.created_at
             ];
           });
         triggerCsvDownload("choices_regression.csv", headers, rows);
       } else if (fileType === "offers_long.csv") {
         const headers = [
           "session_id","participant_code","is_agent","decision_maker","ai_model","is_diverse","policy_condition",
-          "scenario_index","scenario_id","product_involvement","offer_id","seller_id","seller_name",
-          "is_small_seller","seller_size","active_products","seller_rating","seller_review_count","tenure_months",
-          "price_usd","display_rank","small_top3_position","was_inspected","chosen"
+          "scenario_index","scenario_id","category_key","product_involvement","has_discount","discount_pct",
+          "base_price_usd","offer_price_usd","offer_id","seller_id","seller_name","is_low_history",
+          "seller_group","seller_rating","seller_review_count","tenure_short",
+          "display_rank","low_history_top2_pos","was_inspected","chosen"
         ];
         const choiceLookup = {};
         choices.forEach((c) => (choiceLookup[`${c.session_id}|${c.scenario_index}`] = c.offer_id));
@@ -519,13 +535,13 @@
           .map((o) => {
             const s = sessMap[o.session_id];
             const k = `${o.session_id}|${o.scenario_index}`;
-            const isDiv = o.is_diverse !== null && o.is_diverse !== undefined ? o.is_diverse : s.is_diverse;
-            const polCond = o.policy_condition || s.policy_condition;
             return [
               o.session_id, s.participant_code, s.is_agent, s.decision_maker, s.ai_model,
-              isDiv, polCond, o.scenario_index, o.scenario_id, o.product_involvement,
-              o.offer_id, o.seller_id, o.seller_name, o.is_small_seller, o.seller_size, o.active_products,
-              o.seller_rating, o.seller_review_count, o.years_active ?? "", o.price_usd, o.display_rank, o.small_top3_position ?? "",
+              s.is_diverse, s.policy_condition, o.scenario_index, o.scenario_id, o.category_key,
+              o.product_involvement, o.has_discount, o.discount_pct, o.base_price_usd, o.offer_price_usd,
+              o.offer_id, o.seller_id, o.seller_name, o.is_low_history, o.seller_group,
+              o.seller_rating, o.seller_review_count, o.tenure_short,
+              o.display_rank, o.low_history_top2_pos ?? "",
               inspLookup[`${k}|${o.offer_id}`] ? 1 : 0,
               choiceLookup[k] === o.offer_id ? 1 : 0
             ];
@@ -534,30 +550,30 @@
       } else if (fileType === "events.csv") {
         const headers = [
           "event_id","session_id","participant_code","is_agent","is_diverse","scenario_index","scenario_id",
-          "event_type","offer_id","seller_id","seller_size","display_rank","duration_ms","created_at"
+          "event_type","offer_id","seller_id","seller_group","display_rank","duration_ms","created_at"
         ];
         const rows = events
           .filter((e) => sessMap[e.session_id])
           .map((e) => {
             const s = sessMap[e.session_id];
-            const isDiv = e.is_diverse !== null && e.is_diverse !== undefined ? e.is_diverse : s.is_diverse;
             return [
-              e.event_id, e.session_id, s.participant_code, s.is_agent, isDiv ?? "",
-              e.scenario_index, e.scenario_id, e.event_type, e.offer_id, e.seller_id, e.seller_size,
+              e.event_id, e.session_id, s.participant_code, s.is_agent, s.is_diverse,
+              e.scenario_index, e.scenario_id, e.event_type, e.offer_id, e.seller_id, e.seller_group,
               e.display_rank ?? "", e.duration_ms, e.created_at
             ];
           });
         triggerCsvDownload("events.csv", headers, rows);
       } else if (fileType === "sessions.csv") {
         const headers = [
-          "session_id","participant_code","prolific_pid","language","decision_maker","is_agent","ai_model",
-          "policy_condition","is_diverse","completed","passed_attention_check","noticed_seller_size",
-          "size_influence_rating","decision_rationale","age_group","shopping_frequency","created_at","completed_at"
+          "session_id","participant_code","prolific_pid","decision_maker","is_agent","ai_model",
+          "policy_condition","is_diverse","completed","passed_attention_check","noticed_seller_history",
+          "history_influence_rating","noticed_price_diff","decision_rationale","age_group","shopping_frequency",
+          "created_at","completed_at"
         ];
         const rows = sessions.map((s) => [
-          s.session_id, s.participant_code, s.prolific_pid, extractLanguage(s.study_id), s.decision_maker, s.is_agent, s.ai_model,
-          s.policy_condition, s.is_diverse ?? "", s.completed, s.passed_attention_check ?? "", s.noticed_seller_size,
-          s.size_influence_rating ?? "", s.decision_rationale, s.age_group, s.shopping_frequency,
+          s.session_id, s.participant_code, s.prolific_pid, s.decision_maker, s.is_agent, s.ai_model,
+          s.policy_condition, s.is_diverse, s.completed, s.passed_attention_check ?? "", s.noticed_seller_history,
+          s.history_influence_rating ?? "", s.noticed_price_diff, s.decision_rationale, s.age_group, s.shopping_frequency,
           s.created_at, s.completed_at || ""
         ]);
         triggerCsvDownload("sessions.csv", headers, rows);
