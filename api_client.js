@@ -39,41 +39,36 @@
       byKey[`${sc.category_key}|${sc.involvement}`] = sc;
     });
     const shuffledCats = shuffle(cats);
-    const chosenScenarios = shuffle([
+    const lowScenarios = shuffle([
       byKey[`${shuffledCats[0]}|low`],
-      byKey[`${shuffledCats[1]}|low`],
+      byKey[`${shuffledCats[1]}|low`]
+    ]);
+    const highScenarios = shuffle([
       byKey[`${shuffledCats[2]}|high`],
       byKey[`${shuffledCats[3]}|high`]
     ]);
 
-    // Full randomized 2x2 within-subjects assignment across the 4 tasks:
-    // Condition 1: Popularity (0) + No Discount (0)  [Baseline]
-    // Condition 2: Diversity  (1) + No Discount (0)  [Pure Visibility]
-    // Condition 3: Popularity (0) + Discount    (1)  [Pure Price Incentive]
-    // Condition 4: Diversity  (1) + Discount    (1)  [Combined / Synergy]
-    let cells;
-    if (policyOverride === "popularity" || policyOverride === "diversity") {
-      const discs = shuffle([0, 0, 1, 1]);
-      cells = discs.map((d) => ({
-        policyCondition: policyOverride,
-        isDiverse: policyOverride === "diversity" ? 1 : 0,
-        hasDiscount: d
-      }));
-    } else {
-      cells = shuffle([
-        { policyCondition: "popularity", isDiverse: 0, hasDiscount: 0 },
-        { policyCondition: "diversity", isDiverse: 1, hasDiscount: 0 },
-        { policyCondition: "popularity", isDiverse: 0, hasDiscount: 1 },
-        { policyCondition: "diversity", isDiverse: 1, hasDiscount: 1 }
-      ]);
-    }
+    // Balanced & orthogonal 2x2 within-subjects assignment:
+    // - 1 low-price + 1 high-price get No Discount (0); 1 low-price + 1 high-price get Discount (1).
+    // - Within each discount level, 1 gets Popularity (0) and 1 gets Diversity (1), randomly assigned.
+    // - Final presentation order of all 4 tasks is shuffled.
+    const noDiscPols =
+      policyOverride === "popularity" || policyOverride === "diversity"
+        ? [policyOverride, policyOverride]
+        : shuffle(["popularity", "diversity"]);
+    const discPols =
+      policyOverride === "popularity" || policyOverride === "diversity"
+        ? [policyOverride, policyOverride]
+        : shuffle(["popularity", "diversity"]);
 
-    return chosenScenarios.map((sc, idx) => ({
-      sc,
-      policyCondition: cells[idx].policyCondition,
-      isDiverse: cells[idx].isDiverse,
-      hasDiscount: cells[idx].hasDiscount
-    }));
+    const pairs = [
+      { sc: lowScenarios[0], policyCondition: noDiscPols[0], isDiverse: noDiscPols[0] === "diversity" ? 1 : 0, hasDiscount: 0 },
+      { sc: highScenarios[0], policyCondition: noDiscPols[1], isDiverse: noDiscPols[1] === "diversity" ? 1 : 0, hasDiscount: 0 },
+      { sc: lowScenarios[1], policyCondition: discPols[0], isDiverse: discPols[0] === "diversity" ? 1 : 0, hasDiscount: 1 },
+      { sc: highScenarios[1], policyCondition: discPols[1], isDiverse: discPols[1] === "diversity" ? 1 : 0, hasDiscount: 1 }
+    ];
+
+    return shuffle(pairs);
   }
 
   const RATING_POOL = [4.4, 4.5, 4.6, 4.7, 4.8];
