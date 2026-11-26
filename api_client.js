@@ -46,22 +46,33 @@
       byKey[`${shuffledCats[3]}|high`]
     ]);
 
-    // Alternating task policies: Popular -> Diverse -> Popular -> Diverse (unless overridden)
-    const policies =
-      policyOverride === "popularity" || policyOverride === "diversity"
-        ? [policyOverride, policyOverride, policyOverride, policyOverride]
-        : ["popularity", "diversity", "popularity", "diversity"];
-
-    // Cross discount (0 vs 1) evenly across the two popularity slots (0,2) and two diversity slots (1,3)
-    const popDisc = shuffle([0, 1]);
-    const divDisc = shuffle([0, 1]);
-    const discounts = [popDisc[0], divDisc[0], popDisc[1], divDisc[1]];
+    // Full randomized 2x2 within-subjects assignment across the 4 tasks:
+    // Condition 1: Popularity (0) + No Discount (0)  [Baseline]
+    // Condition 2: Diversity  (1) + No Discount (0)  [Pure Visibility]
+    // Condition 3: Popularity (0) + Discount    (1)  [Pure Price Incentive]
+    // Condition 4: Diversity  (1) + Discount    (1)  [Combined / Synergy]
+    let cells;
+    if (policyOverride === "popularity" || policyOverride === "diversity") {
+      const discs = shuffle([0, 0, 1, 1]);
+      cells = discs.map((d) => ({
+        policyCondition: policyOverride,
+        isDiverse: policyOverride === "diversity" ? 1 : 0,
+        hasDiscount: d
+      }));
+    } else {
+      cells = shuffle([
+        { policyCondition: "popularity", isDiverse: 0, hasDiscount: 0 },
+        { policyCondition: "diversity", isDiverse: 1, hasDiscount: 0 },
+        { policyCondition: "popularity", isDiverse: 0, hasDiscount: 1 },
+        { policyCondition: "diversity", isDiverse: 1, hasDiscount: 1 }
+      ]);
+    }
 
     return chosenScenarios.map((sc, idx) => ({
       sc,
-      policyCondition: policies[idx],
-      isDiverse: policies[idx] === "diversity" ? 1 : 0,
-      hasDiscount: discounts[idx]
+      policyCondition: cells[idx].policyCondition,
+      isDiverse: cells[idx].isDiverse,
+      hasDiscount: cells[idx].hasDiscount
     }));
   }
 
