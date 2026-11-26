@@ -148,6 +148,11 @@
     $("header-breadcrumb").textContent = `Marketplace › ${sc.category} › ${sc.product_title}`;
     $("task-counter").textContent = `Task ${state.currentIndex + 1} of ${total}`;
     $("task-title").textContent = sc.product_title;
+    $("task-specs").textContent = sc.short_specs;
+    $("task-stock").textContent = sc.availability || "In Stock";
+    const heroImg = $("task-product-img");
+    heroImg.src = sc.image_url;
+    heroImg.alt = sc.product_title;
     $("task-prompt").textContent = sc.prompt;
     const taskPolicy = sc.policy_condition || state.policyCondition;
     const baseSortLabel =
@@ -168,47 +173,34 @@
 
     sc.offers.forEach((offer) => {
       const card = document.createElement("article");
-      card.className = "offer-card";
+      card.className = "offer-card seller-row-card";
       card.setAttribute("data-offer-id", offer.offer_id);
       card.setAttribute("data-seller-id", offer.seller_id);
 
       card.innerHTML = `
-        <div class="offer-img-box">
-          <img src="${escapeHtml(sc.image_url)}" alt="${escapeHtml(sc.product_title)}" />
+        <div class="seller-col">
+          <div class="seller-link-row">
+            <button type="button" class="seller-name-btn seller-name-lg" data-action="open-seller">${escapeHtml(offer.seller_name)}</button>
+          </div>
+          <div class="seller-rating-line">
+            Seller rating: <span class="stars">${Number(offer.seller_rating).toFixed(1)} &#9733;</span> <span class="muted">(${formatInt(offer.seller_review_count)} ratings)</span>
+          </div>
+          <div class="seller-tenure-line muted">
+            ${offer.years_active > 0 ? `${offer.years_active} years active` : "&lt;1 year active"}
+          </div>
         </div>
-        <div class="offer-body">
-          <h2 class="offer-title">${escapeHtml(sc.product_title)}</h2>
-          <div class="offer-specs">${escapeHtml(sc.short_specs)}</div>
-          <div class="offer-rating-line">
-            <span class="stock-pill">${escapeHtml(sc.availability)}</span>
-          </div>
-          <div class="price-info-box">
-            <div class="price-pair">${renderPriceHtml(offer, sc)}</div>
-            <div class="delivery-line">${escapeHtml(offer.delivery_text || sc.delivery_text)}</div>
-            <div class="muted" style="font-size:12px;">${escapeHtml(offer.warranty || sc.warranty)}</div>
-          </div>
+        <div class="price-col">
+          <div class="price-pair">${renderPriceHtml(offer, sc)}</div>
+          <div class="details-hint-line">Shipping speed &amp; warranty details inside</div>
         </div>
         <div class="offer-action-col">
-          <div class="seller-info-box">
-            <div class="seller-link-row">
-              <span class="muted">Sold by</span>
-              <button type="button" class="seller-name-btn" data-action="open-seller">${escapeHtml(offer.seller_name)}</button>
-            </div>
-            <div class="seller-rating-line">
-              Seller rating: <span class="stars">${Number(offer.seller_rating).toFixed(1)} &#9733;</span> <span class="muted">(${formatInt(offer.seller_review_count)} ratings)</span>
-            </div>
-            <div class="seller-tenure-line">
-              ${offer.years_active > 0 ? `${offer.years_active} years active` : "&lt;1 year active"}
-            </div>
-          </div>
-          <button type="button" class="btn btn-secondary btn-sm" data-action="open-offer">View Offer Details</button>
-          <button type="button" class="select-offer-btn" data-action="select-offer" role="radio" aria-checked="false">Select This Offer</button>
+          <div class="selected-row-badge hidden" data-role="selected-badge">Selected &#10003;</div>
+          <button type="button" class="select-offer-btn view-details-row-btn" data-action="open-offer">View Offer Details</button>
         </div>
       `;
 
       card.querySelector('[data-action="open-seller"]').addEventListener("click", () => openSellerModal(offer, sc));
       card.querySelector('[data-action="open-offer"]').addEventListener("click", () => openOfferModal(offer, sc));
-      card.querySelector('[data-action="select-offer"]').addEventListener("click", () => selectOffer(offer));
 
       listEl.appendChild(card);
     });
@@ -228,10 +220,13 @@
       const oid = card.getAttribute("data-offer-id");
       const isSelected = state.selectedOffer && state.selectedOffer.offer_id === oid;
       card.classList.toggle("selected", Boolean(isSelected));
-      const btn = card.querySelector('[data-action="select-offer"]');
+      const badge = card.querySelector('[data-role="selected-badge"]');
+      if (badge) {
+        badge.classList.toggle("hidden", !isSelected);
+      }
+      const btn = card.querySelector('[data-action="open-offer"]');
       if (btn) {
-        btn.setAttribute("aria-checked", isSelected ? "true" : "false");
-        btn.textContent = isSelected ? "Selected ✓" : "Select This Offer";
+        btn.textContent = isSelected ? "View Details (Selected ✓)" : "View Offer Details";
       }
     });
 
@@ -243,7 +238,7 @@
       stickyText.innerHTML = `Selected: <strong>${escapeHtml(state.selectedOffer.seller_name)}</strong> — <strong>${formatUsd(state.selectedOffer.offer_price_usd)}</strong>`;
       confirmBtn.disabled = false;
     } else {
-      stickyText.textContent = "Please select one offer above to continue.";
+      stickyText.textContent = "Click View Offer Details on a seller above to inspect and select an offer.";
       confirmBtn.disabled = true;
     }
   }

@@ -112,15 +112,15 @@
         <div class="inst-card">
           <div class="inst-num">2</div>
           <div>
-            <h4>Review the 10 Available Offers</h4>
-            <p>Examine the offers listed on the page. You may click <strong>View Offer Details</strong> or any <strong>seller's name</strong> to inspect additional details.</p>
+            <h4>Inspect Seller Offers</h4>
+            <p>Compare the 10 sellers listed below the product. Click <strong>View Offer Details</strong> (or any seller's name) to check shipping speed, seller warranty, and return terms.</p>
           </div>
         </div>
         <div class="inst-card">
           <div class="inst-num">3</div>
           <div>
             <h4>Select &amp; Confirm One Seller</h4>
-            <p>Choose the single offer you prefer and click <strong>Confirm &amp; Continue</strong>. Once confirmed, choices cannot be changed.</p>
+            <p>Click <strong>Select This Offer</strong> inside the details window of your preferred seller, then click <strong>Confirm &amp; Continue</strong>. Once confirmed, choices cannot be changed.</p>
           </div>
         </div>
       </div>
@@ -134,20 +134,27 @@
     <!-- STEP 4: MARKETPLACE SCENARIOS -->
     <section id="view-marketplace" class="view-section hidden">
       <div class="task-header card-panel">
-        <div class="task-top-row">
-          <div>
-            <span class="task-counter" id="task-counter">Task 1 of 4</span>
+        <div class="product-hero-grid">
+          <div class="product-hero-img">
+            <img id="task-product-img" src="" alt="Product image" />
+          </div>
+          <div class="product-hero-info">
+            <div class="product-hero-top">
+              <span class="task-counter" id="task-counter">Task 1 of 4</span>
+              <span class="stock-pill" id="task-stock">In Stock</span>
+            </div>
             <h1 class="task-product-heading" id="task-title">Product Title</h1>
+            <div class="offer-specs" id="task-specs"></div>
+            <p class="task-prompt" id="task-prompt"></p>
           </div>
           <div class="progress-wrap">
             <div class="progress-label"><span id="progress-pct">25%</span> Complete</div>
             <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width: 25%;"></div></div>
           </div>
         </div>
-        <p class="task-prompt" id="task-prompt"></p>
         <div class="listing-meta-bar">
-          <span>10 offers available &middot; <strong id="sort-label">Sorted by: Most Popular</strong></span>
-          <span class="muted">All 10 offers below are for the exact same product</span>
+          <span>10 sellers offering this product &middot; <strong id="sort-label">Sorted by: Most Popular</strong></span>
+          <span class="muted">Click <strong>View Offer Details</strong> to inspect shipping &amp; warranty and select a seller</span>
         </div>
       </div>
 
