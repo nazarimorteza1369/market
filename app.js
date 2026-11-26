@@ -180,7 +180,8 @@
           </div>
           <div class="price-info-box">
             <div class="price-pair">${renderPriceHtml(offer, sc)}</div>
-            <div class="delivery-line">${escapeHtml(sc.delivery_text)}</div>
+            <div class="delivery-line">${escapeHtml(offer.delivery_text || sc.delivery_text)}</div>
+            <div class="muted" style="font-size:12px;">${escapeHtml(offer.warranty || sc.warranty)}</div>
           </div>
         </div>
         <div class="offer-action-col">
@@ -262,8 +263,8 @@
         <tr><th>Seller</th><td>${escapeHtml(offer.seller_name)} (${Number(offer.seller_rating).toFixed(1)} &#9733;, ${formatInt(offer.seller_review_count)} ratings)</td></tr>
         <tr><th>Time on Marketplace</th><td>${escapeHtml(offer.tenure_text)}</td></tr>
         <tr><th>Key Specifications</th><td>${escapeHtml(sc.short_specs)}</td></tr>
-        <tr><th>Shipping</th><td>${escapeHtml(sc.delivery_text)}</td></tr>
-        <tr><th>Warranty</th><td>${escapeHtml(sc.warranty)}</td></tr>
+        <tr><th>Shipping</th><td>${escapeHtml(offer.delivery_text || sc.delivery_text)}</td></tr>
+        <tr><th>Warranty</th><td>${escapeHtml(offer.warranty || sc.warranty)}</td></tr>
         <tr><th>Return Policy</th><td>${escapeHtml(sc.return_policy)}</td></tr>
         <tr><th>Availability</th><td>${escapeHtml(sc.availability)}</td></tr>
       </table>
@@ -312,7 +313,8 @@
         <tr><th>Storefront History</th><td>${escapeHtml(offer.tenure_text)}</td></tr>
         <tr><th>Product Offered</th><td>${escapeHtml(sc.product_title)}</td></tr>
         <tr><th>Offer Price</th><td><span class="price-pair-inline">${renderPriceHtml(offer, sc)}</span></td></tr>
-        <tr><th>Shipping</th><td>${escapeHtml(sc.delivery_text)}</td></tr>
+        <tr><th>Shipping</th><td>${escapeHtml(offer.delivery_text || sc.delivery_text)}</td></tr>
+        <tr><th>Warranty</th><td>${escapeHtml(offer.warranty || sc.warranty)}</td></tr>
         <tr><th>Return Policy</th><td>${escapeHtml(sc.return_policy)}</td></tr>
       </table>
     `;

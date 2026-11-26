@@ -76,37 +76,35 @@
     }));
   }
 
-  function assignDynamicRatings(estList, lowList) {
-    // Established (>1000 ratings): 1 random gets 4.7; remaining 4 get [4.8, 4.6, 4.5, 4.4]
-    // in ascending order of review count (higher review count => lower rating).
-    const estClones = estList.map((s) => Object.assign({}, s));
-    const pickIdx = Math.floor(Math.random() * estClones.length);
-    estClones[pickIdx].seller_rating = 4.7;
-    const restEst = estClones
-      .filter((_, idx) => idx !== pickIdx)
-      .sort((a, b) => Number(a.seller_review_count) - Number(b.seller_review_count));
-    const restScores = [4.8, 4.6, 4.5, 4.4];
-    restEst.forEach((s, i) => {
-      s.seller_rating = restScores[i];
-    });
+  const RATING_POOL = [4.5, 4.6, 4.7, 4.8];
+  const DELIVERY_POOL = ["Free 1–2 Day Delivery", "Free 2–3 Day Delivery", "Free 3–5 Day Delivery"];
+  const WARRANTY_POOL = ["12-Month Seller Warranty", "18-Month Seller Warranty"];
 
-    // Low-history: exact same 5 ratings [4.8, 4.7, 4.6, 4.5, 4.4] shuffled randomly (mean = 4.60).
-    const lowClones = lowList.map((s) => Object.assign({}, s));
-    const lowScores = shuffle([4.8, 4.7, 4.6, 4.5, 4.4]);
-    lowClones.forEach((s, i) => {
-      s.seller_rating = lowScores[i];
-    });
+  function pickRandom(pool) {
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
 
-    // Sort both groups strictly descending by seller_review_count (popularity) without shuffling names
-    const estSorted = estClones.sort((a, b) => Number(b.seller_review_count) - Number(a.seller_review_count));
-    const lowSorted = lowClones.sort((a, b) => Number(b.seller_review_count) - Number(a.seller_review_count));
+  function assignRandomSecondaryCues(estList, lowList) {
+    // Independent random draws from identical distributions for BOTH seller groups
+    // (orthogonal to seller history/scale in expectation while varying naturally within each page).
+    const applyPool = (list) =>
+      list.map((s) =>
+        Object.assign({}, s, {
+          seller_rating: pickRandom(RATING_POOL),
+          delivery_text: pickRandom(DELIVERY_POOL),
+          warranty: pickRandom(WARRANTY_POOL)
+        })
+      );
+
+    const estSorted = applyPool(estList).sort((a, b) => Number(b.seller_review_count) - Number(a.seller_review_count));
+    const lowSorted = applyPool(lowList).sort((a, b) => Number(b.seller_review_count) - Number(a.seller_review_count));
     return { estRated: estSorted, lowRated: lowSorted };
   }
 
   function buildScenarioOffers(scenario, policyCondition) {
     const rawEst = scenario.sellers.filter((s) => s.is_low_history === 0);
     const rawLow = scenario.sellers.filter((s) => s.is_low_history === 1);
-    const { estRated, lowRated } = assignDynamicRatings(rawEst, rawLow);
+    const { estRated, lowRated } = assignRandomSecondaryCues(rawEst, rawLow);
 
     if (policyCondition === "popularity") {
       return {
@@ -308,6 +306,8 @@
             seller_rating: sel.seller_rating,
             seller_review_count: sel.seller_review_count,
             tenure_short: sel.tenure_short,
+            delivery_text: sel.delivery_text,
+            warranty: sel.warranty,
             display_rank: rank,
             low_history_top2_pos: lowTop2Pos
           };
@@ -419,6 +419,8 @@
         chosen_seller_group: offerRow.seller_group,
         chosen_seller_rating: offerRow.seller_rating,
         chosen_seller_reviews: offerRow.seller_review_count,
+        chosen_delivery_text: offerRow.delivery_text || "",
+        chosen_warranty: offerRow.warranty || "",
         chosen_rank: offerRow.display_rank,
         low_history_top2_pos: offerRow.low_history_top2_pos,
         inspected_count: inspCount,
@@ -564,7 +566,7 @@
           "is_diverse","policy_condition","scenario_index","scenario_id","category_key","product_involvement",
           "has_discount","discount_pct","base_price_usd","chosen_price_usd",
           "chosen_seller_id","chosen_seller_name","chose_low_history","chosen_seller_group",
-          "chosen_seller_rating","chosen_seller_reviews","chosen_rank","low_history_top2_pos",
+          "chosen_seller_rating","chosen_seller_reviews","chosen_delivery_text","chosen_warranty","chosen_rank","low_history_top2_pos",
           "inspected_count","inspected_low_history","inspected_established",
           "decision_time_ms","passed_attention_check","noticed_seller_history",
           "history_influence_rating","noticed_price_diff","created_at"
@@ -578,7 +580,7 @@
               c.is_diverse ?? s.is_diverse, c.policy_condition || s.policy_condition, c.scenario_index, c.scenario_id, c.category_key, c.product_involvement,
               c.has_discount, c.discount_pct, c.base_price_usd, c.chosen_price_usd,
               c.chosen_seller_id, c.chosen_seller_name, c.chose_low_history, c.chosen_seller_group,
-              c.chosen_seller_rating, c.chosen_seller_reviews, c.chosen_rank, c.low_history_top2_pos ?? "",
+              c.chosen_seller_rating, c.chosen_seller_reviews, c.chosen_delivery_text || "", c.chosen_warranty || "", c.chosen_rank, c.low_history_top2_pos ?? "",
               c.inspected_count, c.inspected_low_history, c.inspected_established,
               c.decision_time_ms, s.passed_attention_check ?? "", s.noticed_seller_history,
               s.history_influence_rating ?? "", s.noticed_price_diff, c.created_at
@@ -590,7 +592,7 @@
           "session_id","participant_code","is_agent","decision_maker","ai_model","is_diverse","policy_condition",
           "scenario_index","scenario_id","category_key","product_involvement","has_discount","discount_pct",
           "base_price_usd","offer_price_usd","offer_id","seller_id","seller_name","is_low_history",
-          "seller_group","seller_rating","seller_review_count","tenure_short",
+          "seller_group","seller_rating","seller_review_count","tenure_short","delivery_text","warranty",
           "display_rank","low_history_top2_pos","was_inspected","chosen"
         ];
         const choiceLookup = {};
@@ -611,7 +613,7 @@
               o.is_diverse ?? s.is_diverse, o.policy_condition || s.policy_condition, o.scenario_index, o.scenario_id, o.category_key,
               o.product_involvement, o.has_discount, o.discount_pct, o.base_price_usd, o.offer_price_usd,
               o.offer_id, o.seller_id, o.seller_name, o.is_low_history, o.seller_group,
-              o.seller_rating, o.seller_review_count, o.tenure_short,
+              o.seller_rating, o.seller_review_count, o.tenure_short, o.delivery_text || "", o.warranty || "",
               o.display_rank, o.low_history_top2_pos ?? "",
               inspLookup[`${k}|${o.offer_id}`] ? 1 : 0,
               choiceLookup[k] === o.offer_id ? 1 : 0
