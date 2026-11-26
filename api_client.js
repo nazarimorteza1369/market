@@ -76,28 +76,40 @@
     }));
   }
 
-  const RATING_POOL = [4.5, 4.6, 4.7, 4.8];
+  const RATING_POOL = [4.4, 4.5, 4.6, 4.7, 4.8];
   const DELIVERY_POOL = ["Free 1–2 Day Delivery", "Free 2–3 Day Delivery", "Free 3–5 Day Delivery"];
   const WARRANTY_POOL = ["12-Month Seller Warranty", "18-Month Seller Warranty"];
 
-  function pickRandom(pool) {
-    return pool[Math.floor(Math.random() * pool.length)];
+  function buildBalancedDelivery5() {
+    // All 3 delivery speeds + 2 distinct extras (each appears 1–2 times), shuffled
+    const extras = shuffle(DELIVERY_POOL).slice(0, 2);
+    return shuffle(DELIVERY_POOL.concat(extras));
+  }
+
+  function buildBalancedWarranty5() {
+    // 2x 12-Month + 2x 18-Month + 1 random extra, shuffled
+    const extra = WARRANTY_POOL[Math.floor(Math.random() * WARRANTY_POOL.length)];
+    return shuffle([WARRANTY_POOL[0], WARRANTY_POOL[0], WARRANTY_POOL[1], WARRANTY_POOL[1], extra]);
   }
 
   function assignRandomSecondaryCues(estList, lowList) {
-    // Independent random draws from identical distributions for BOTH seller groups
-    // (orthogonal to seller history/scale in expectation while varying naturally within each page).
-    const applyPool = (list) =>
-      list.map((s) =>
+    // Exact permutation of [4.4, 4.5, 4.6, 4.7, 4.8] + balanced delivery & warranty
+    // independently shuffled for BOTH seller groups (exact group mean = 4.60 on every page).
+    const applyGroup = (list) => {
+      const ratings = shuffle(RATING_POOL);
+      const deliveries = buildBalancedDelivery5();
+      const warranties = buildBalancedWarranty5();
+      return list.map((s, idx) =>
         Object.assign({}, s, {
-          seller_rating: pickRandom(RATING_POOL),
-          delivery_text: pickRandom(DELIVERY_POOL),
-          warranty: pickRandom(WARRANTY_POOL)
+          seller_rating: ratings[idx],
+          delivery_text: deliveries[idx],
+          warranty: warranties[idx]
         })
       );
+    };
 
-    const estSorted = applyPool(estList).sort((a, b) => Number(b.seller_review_count) - Number(a.seller_review_count));
-    const lowSorted = applyPool(lowList).sort((a, b) => Number(b.seller_review_count) - Number(a.seller_review_count));
+    const estSorted = applyGroup(estList).sort((a, b) => Number(b.seller_review_count) - Number(a.seller_review_count));
+    const lowSorted = applyGroup(lowList).sort((a, b) => Number(b.seller_review_count) - Number(a.seller_review_count));
     return { estRated: estSorted, lowRated: lowSorted };
   }
 
