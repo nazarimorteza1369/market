@@ -192,16 +192,12 @@
           <div class="warranty-line">${escapeHtml(offer.warranty || sc.warranty)}</div>
         </div>
         <div class="offer-action-col">
-          <button type="button" class="btn btn-secondary btn-sm" data-action="open-offer">View Offer Details</button>
-          <button type="button" class="select-offer-btn" data-action="select-offer">Select This Offer</button>
+          <button type="button" class="select-offer-btn" data-action="open-offer">View Offer Details</button>
         </div>
       `;
 
       card.querySelector('[data-action="open-seller"]').addEventListener("click", () => openSellerModal(offer, sc));
       card.querySelector('[data-action="open-offer"]').addEventListener("click", () => openOfferModal(offer, sc));
-      card.querySelector('[data-action="select-offer"]').addEventListener("click", (e) => {
-        submitOfferDirect(offer, e.currentTarget, "row");
-      });
 
       listEl.appendChild(card);
     });
