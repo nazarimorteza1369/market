@@ -150,10 +150,14 @@
     $("task-title").textContent = sc.product_title;
     $("task-prompt").textContent = sc.prompt;
     const taskPolicy = sc.policy_condition || state.policyCondition;
-    $("sort-label").textContent =
+    const baseSortLabel =
       taskPolicy === "diversity"
-        ? "Sorted by: Featured & Diverse"
+        ? "Sorted by: Featured"
         : "Sorted by: Most Popular";
+    $("sort-label").textContent =
+      Number(sc.has_discount) === 1
+        ? `${baseSortLabel} · Special Offers Available`
+        : baseSortLabel;
     $("progress-pct").textContent = `${pct}%`;
     $("progress-fill").style.width = `${pct}%`;
 
