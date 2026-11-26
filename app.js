@@ -182,21 +182,26 @@
           <div class="seller-rating-line">
             Seller rating: <span class="stars">${Number(offer.seller_rating).toFixed(1)} &#9733;</span> <span class="muted">(${formatInt(offer.seller_review_count)} ratings)</span>
           </div>
-          <div class="seller-tenure-line muted">
+          <div class="seller-tenure-line tenure-blue">
             ${offer.years_active > 0 ? `${offer.years_active} years active` : "&lt;1 year active"}
           </div>
         </div>
         <div class="price-col">
           <div class="price-pair">${renderPriceHtml(offer, sc)}</div>
-          <div class="details-hint-line">Shipping speed &amp; warranty details inside</div>
+          <div class="delivery-line">${escapeHtml(offer.delivery_text || sc.delivery_text)}</div>
+          <div class="warranty-line">${escapeHtml(offer.warranty || sc.warranty)}</div>
         </div>
         <div class="offer-action-col">
-          <button type="button" class="select-offer-btn view-details-row-btn" data-action="open-offer">View Offer Details</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-action="open-offer">View Offer Details</button>
+          <button type="button" class="select-offer-btn" data-action="select-offer">Select This Offer</button>
         </div>
       `;
 
       card.querySelector('[data-action="open-seller"]').addEventListener("click", () => openSellerModal(offer, sc));
       card.querySelector('[data-action="open-offer"]').addEventListener("click", () => openOfferModal(offer, sc));
+      card.querySelector('[data-action="select-offer"]').addEventListener("click", (e) => {
+        submitOfferDirect(offer, e.currentTarget, "row");
+      });
 
       listEl.appendChild(card);
     });
@@ -221,10 +226,8 @@
       </div>
       <table class="spec-table">
         <tr><th>Seller</th><td>${escapeHtml(offer.seller_name)} (${Number(offer.seller_rating).toFixed(1)} &#9733;, ${formatInt(offer.seller_review_count)} ratings)</td></tr>
-        <tr><th>Time on Marketplace</th><td>${escapeHtml(offer.tenure_text)}</td></tr>
+        <tr><th>Time on Marketplace</th><td><span class="tenure-blue">${escapeHtml(offer.tenure_text)}</span></td></tr>
         <tr><th>Key Specifications</th><td>${escapeHtml(sc.short_specs)}</td></tr>
-        <tr><th>Shipping</th><td>${escapeHtml(offer.delivery_text || sc.delivery_text)}</td></tr>
-        <tr><th>Warranty</th><td>${escapeHtml(offer.warranty || sc.warranty)}</td></tr>
         <tr><th>Return Policy</th><td>${escapeHtml(sc.return_policy)}</td></tr>
         <tr><th>Availability</th><td>${escapeHtml(sc.availability)}</td></tr>
       </table>
@@ -248,8 +251,10 @@
 
     const sc = state.scenarios[state.currentIndex];
     const decisionTimeMs = Date.now() - state.scenarioStartMs;
-    const dwell = Date.now() - state.modalOpenedMs;
-    logEvent(modalType === "seller" ? "seller_profile_closed" : "offer_detail_closed", offer, dwell);
+    if (modalType === "offer" || modalType === "seller") {
+      const dwell = Date.now() - state.modalOpenedMs;
+      logEvent(modalType === "seller" ? "seller_profile_closed" : "offer_detail_closed", offer, dwell);
+    }
 
     try {
       await window.GazinAPI.submitChoice({

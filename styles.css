@@ -594,6 +594,17 @@ h1, h2, h3, h4 {
   color: var(--muted);
 }
 
+.tenure-blue {
+  color: #1d4ed8 !important;
+  font-weight: 600;
+}
+
+.warranty-line {
+  font-size: 13px;
+  color: #dc2626;
+  font-weight: 600;
+}
+
 .selected-row-badge {
   background: var(--success-bg);
   color: var(--success);
