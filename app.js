@@ -69,6 +69,12 @@
     return Number(val).toLocaleString("en-US");
   }
 
+  function renderStarsHtml(rating) {
+    const r = Math.max(0, Math.min(5, Number(rating) || 0));
+    const pct = ((r / 5) * 100).toFixed(1);
+    return `<span class="star-bar" aria-label="${r.toFixed(1)} out of 5 stars" style="--rating-pct:${pct}%;"><span class="star-bar-bg" aria-hidden="true">&#9733;&#9733;&#9733;&#9733;&#9733;</span><span class="star-bar-fill" aria-hidden="true">&#9733;&#9733;&#9733;&#9733;&#9733;</span></span>`;
+  }
+
   function logEvent(eventType, offer, durationMs) {
     if (!state.sessionId) return;
     const sc = state.scenarios[state.currentIndex];
@@ -180,7 +186,7 @@
             <button type="button" class="seller-name-btn seller-name-lg" data-action="open-seller">${escapeHtml(offer.seller_name)}</button>
           </div>
           <div class="seller-rating-line">
-            Seller rating: <span class="stars">${Number(offer.seller_rating).toFixed(1)} &#9733;</span> <span class="muted">(${formatInt(offer.seller_review_count)} ratings)</span>
+            Seller rating: <strong>${Number(offer.seller_rating).toFixed(1)}</strong> ${renderStarsHtml(offer.seller_rating)} <span class="muted">(${formatInt(offer.seller_review_count)} ratings)</span>
           </div>
           <div class="seller-tenure-line tenure-blue">
             ${offer.years_active > 0 ? `${offer.years_active} years active` : "&lt;1 year active"}
@@ -221,7 +227,7 @@
         </div>
       </div>
       <table class="spec-table">
-        <tr><th>Seller</th><td>${escapeHtml(offer.seller_name)} (${Number(offer.seller_rating).toFixed(1)} &#9733;, ${formatInt(offer.seller_review_count)} ratings)</td></tr>
+        <tr><th>Seller</th><td>${escapeHtml(offer.seller_name)} — <strong>${Number(offer.seller_rating).toFixed(1)}</strong> ${renderStarsHtml(offer.seller_rating)} (${formatInt(offer.seller_review_count)} ratings)</td></tr>
         <tr><th>Time on Marketplace</th><td><span class="tenure-blue">${escapeHtml(offer.tenure_text)}</span></td></tr>
         <tr><th>Key Specifications</th><td>${escapeHtml(sc.short_specs)}</td></tr>
         <tr><th>Return Policy</th><td>${escapeHtml(sc.return_policy)}</td></tr>
@@ -300,7 +306,8 @@
       <p class="muted">Verified storefront on Gazin Market &middot; ${escapeHtml(offer.on_time_rate)} on-time delivery</p>
       <div class="stat-cards-3">
         <div class="stat-tile">
-          <div class="stat-val">${Number(offer.seller_rating).toFixed(1)} &#9733;</div>
+          <div class="stat-val">${Number(offer.seller_rating).toFixed(1)}</div>
+          <div style="margin:2px 0;">${renderStarsHtml(offer.seller_rating)}</div>
           <div class="stat-lbl">Seller Star Rating</div>
         </div>
         <div class="stat-tile">

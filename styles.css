@@ -673,6 +673,30 @@ h1, h2, h3, h4 {
   font-weight: 700;
 }
 
+.star-bar {
+  position: relative;
+  display: inline-block;
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: 0;
+  vertical-align: -1px;
+  margin: 0 3px;
+}
+
+.star-bar-bg {
+  color: #cbd5e1;
+}
+
+.star-bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  width: var(--rating-pct, 0%);
+  color: var(--accent);
+}
+
 .stock-pill {
   background: var(--success-bg);
   color: var(--success);
