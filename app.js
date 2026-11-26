@@ -22,7 +22,8 @@
     scenarioStartMs: 0,
     activeModalOffer: null,
     activeModalType: null,
-    modalOpenedMs: 0
+    modalOpenedMs: 0,
+    isSubmittingChoice: false
   };
 
   const $ = (id) => document.getElementById(id);
@@ -40,8 +41,6 @@
     Object.keys(views).forEach((k) => {
       views[k].classList.toggle("hidden", k !== name);
     });
-    const showSticky = name === "marketplace";
-    $("sticky-bar").classList.toggle("hidden", !showSticky);
     appRoot.setAttribute("data-study-status", name);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -166,8 +165,6 @@
     $("progress-pct").textContent = `${pct}%`;
     $("progress-fill").style.width = `${pct}%`;
 
-    updateSelectionUI();
-
     const listEl = $("offers-list");
     listEl.innerHTML = "";
 
@@ -194,7 +191,6 @@
           <div class="details-hint-line">Shipping speed &amp; warranty details inside</div>
         </div>
         <div class="offer-action-col">
-          <div class="selected-row-badge hidden" data-role="selected-badge">Selected &#10003;</div>
           <button type="button" class="select-offer-btn view-details-row-btn" data-action="open-offer">View Offer Details</button>
         </div>
       `;
@@ -206,41 +202,6 @@
     });
 
     logEvent("scenario_viewed", null, 0);
-  }
-
-  function selectOffer(offer) {
-    state.selectedOffer = offer;
-    updateSelectionUI();
-    logEvent("offer_selected_radio", offer, 0);
-  }
-
-  function updateSelectionUI() {
-    const cards = document.querySelectorAll(".offer-card");
-    cards.forEach((card) => {
-      const oid = card.getAttribute("data-offer-id");
-      const isSelected = state.selectedOffer && state.selectedOffer.offer_id === oid;
-      card.classList.toggle("selected", Boolean(isSelected));
-      const badge = card.querySelector('[data-role="selected-badge"]');
-      if (badge) {
-        badge.classList.toggle("hidden", !isSelected);
-      }
-      const btn = card.querySelector('[data-action="open-offer"]');
-      if (btn) {
-        btn.textContent = isSelected ? "View Details (Selected ✓)" : "View Offer Details";
-      }
-    });
-
-    const sc = state.scenarios[state.currentIndex];
-    const stickyText = $("sticky-selection-text");
-    const confirmBtn = $("btn-confirm-choice");
-
-    if (state.selectedOffer && sc) {
-      stickyText.innerHTML = `Selected: <strong>${escapeHtml(state.selectedOffer.seller_name)}</strong> — <strong>${formatUsd(state.selectedOffer.offer_price_usd)}</strong>`;
-      confirmBtn.disabled = false;
-    } else {
-      stickyText.textContent = "Click View Offer Details on a seller above to inspect and select an offer.";
-      confirmBtn.disabled = true;
-    }
   }
 
   function openOfferModal(offer, sc) {
@@ -278,11 +239,53 @@
     $("modal-offer").classList.add("hidden");
   }
 
+  async function submitOfferDirect(offer, btn, modalType) {
+    if (!offer || state.isSubmittingChoice) return;
+    state.isSubmittingChoice = true;
+    const origText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Saving...";
+
+    const sc = state.scenarios[state.currentIndex];
+    const decisionTimeMs = Date.now() - state.scenarioStartMs;
+    const dwell = Date.now() - state.modalOpenedMs;
+    logEvent(modalType === "seller" ? "seller_profile_closed" : "offer_detail_closed", offer, dwell);
+
+    try {
+      await window.GazinAPI.submitChoice({
+        session_id: state.sessionId,
+        scenario_index: sc.scenario_index,
+        scenario_id: sc.scenario_id,
+        offer_id: offer.offer_id,
+        decision_time_ms: decisionTimeMs
+      });
+
+      $("modal-offer").classList.add("hidden");
+      $("modal-seller").classList.add("hidden");
+
+      if (state.currentIndex + 1 < state.scenarios.length) {
+        state.currentIndex += 1;
+        renderScenario();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else if (isAgent && !forceSurvey) {
+        const res = await window.GazinAPI.completeAgentSession(state.sessionId);
+        finishStudy(res.completion_code);
+      } else {
+        showView("survey");
+      }
+    } catch (err) {
+      alert("Error saving selection: " + err.message);
+    } finally {
+      state.isSubmittingChoice = false;
+      btn.disabled = false;
+      btn.textContent = origText;
+    }
+  }
+
   $("btn-close-offer").addEventListener("click", closeOfferModal);
   $("btn-offer-back").addEventListener("click", closeOfferModal);
   $("btn-offer-select").addEventListener("click", () => {
-    if (state.activeModalOffer) selectOffer(state.activeModalOffer);
-    closeOfferModal();
+    submitOfferDirect(state.activeModalOffer, $("btn-offer-select"), "offer");
   });
 
   function openSellerModal(offer, sc) {
@@ -330,55 +333,7 @@
   $("btn-close-seller").addEventListener("click", closeSellerModal);
   $("btn-seller-back").addEventListener("click", closeSellerModal);
   $("btn-seller-select").addEventListener("click", () => {
-    if (state.activeModalOffer) selectOffer(state.activeModalOffer);
-    closeSellerModal();
-  });
-
-  $("btn-confirm-choice").addEventListener("click", () => {
-    if (!state.selectedOffer) return;
-    const sc = state.scenarios[state.currentIndex];
-    $("confirm-modal-body").innerHTML = `You are selecting <strong>${escapeHtml(sc.product_title)}</strong> from seller <strong>${escapeHtml(state.selectedOffer.seller_name)}</strong> for <strong>${formatUsd(state.selectedOffer.offer_price_usd)}</strong>.`;
-    $("modal-confirm").classList.remove("hidden");
-  });
-
-  $("btn-cancel-confirm").addEventListener("click", () => {
-    $("modal-confirm").classList.add("hidden");
-  });
-
-  $("btn-submit-choice").addEventListener("click", async () => {
-    if (!state.selectedOffer) return;
-    const btn = $("btn-submit-choice");
-    btn.disabled = true;
-    btn.textContent = "Saving...";
-    const sc = state.scenarios[state.currentIndex];
-    const decisionTimeMs = Date.now() - state.scenarioStartMs;
-
-    try {
-      await window.GazinAPI.submitChoice({
-        session_id: state.sessionId,
-        scenario_index: sc.scenario_index,
-        scenario_id: sc.scenario_id,
-        offer_id: state.selectedOffer.offer_id,
-        decision_time_ms: decisionTimeMs
-      });
-      $("modal-confirm").classList.add("hidden");
-
-      if (state.currentIndex + 1 < state.scenarios.length) {
-        state.currentIndex += 1;
-        renderScenario();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      } else if (isAgent && !forceSurvey) {
-        const res = await window.GazinAPI.completeAgentSession(state.sessionId);
-        finishStudy(res.completion_code);
-      } else {
-        showView("survey");
-      }
-    } catch (err) {
-      alert("Error saving selection: " + err.message);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "Yes, Confirm Offer";
-    }
+    submitOfferDirect(state.activeModalOffer, $("btn-seller-select"), "seller");
   });
 
   $("survey-form").addEventListener("submit", async (e) => {
