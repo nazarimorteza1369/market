@@ -584,7 +584,8 @@ h1, h2, h3, h4 {
 .price-col {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 6px;
   border-left: 1px solid #eef2f6;
   padding-left: 20px;
 }
@@ -600,9 +601,15 @@ h1, h2, h3, h4 {
 }
 
 .warranty-line {
-  font-size: 13px;
+  display: inline-block;
+  width: fit-content;
+  font-size: 12.5px;
   color: #b45309;
   font-weight: 600;
+  background: #fffbeb;
+  border: 1.5px solid #b45309;
+  border-radius: 6px;
+  padding: 3px 9px;
 }
 
 .selected-row-badge {
@@ -802,9 +809,15 @@ h1, h2, h3, h4 {
 }
 
 .delivery-line {
-  font-size: 12px;
+  display: inline-block;
+  width: fit-content;
+  font-size: 12.5px;
   color: var(--success);
   font-weight: 600;
+  background: var(--success-bg);
+  border: 1.5px solid var(--success);
+  border-radius: 6px;
+  padding: 3px 9px;
 }
 
 .select-offer-btn {
